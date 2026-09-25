@@ -10,6 +10,9 @@ export interface CameraStatus {
 	frame_count: number;
 	last_frame_age_ms: number;
 	is_hardware: boolean;
+	vision_enabled: boolean;
+	canopy_ratio: number | null;
+	canopy_detected: boolean;
 }
 
 export interface CameraControlPayload {

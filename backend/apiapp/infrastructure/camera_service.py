@@ -21,6 +21,7 @@ from typing import Literal
 from loguru import logger
 
 from ..core.config import Settings
+from .vision import CanopyDetector, CanopyResult
 
 # ---------------------------------------------------------------------------
 # Minimal Pure-Python Baseline JPEG Encoder
@@ -941,6 +942,9 @@ class CameraStatus:
     frame_count: int
     last_frame_age_ms: int
     is_hardware: bool
+    vision_enabled: bool = False
+    canopy_ratio: float | None = None
+    canopy_detected: bool = False
 
 
 class CameraService:
@@ -959,6 +963,8 @@ class CameraService:
         self._last_frame_time: float = 0.0
         self._cv2_cap: object | None = None
         self._loop_task: asyncio.Task[None] | None = None
+        self._detector: CanopyDetector | None = None
+        self._canopy: CanopyResult | None = None
 
     async def start(self, settings: Settings) -> None:
         self._settings = settings
@@ -1010,6 +1016,8 @@ class CameraService:
 
                 if not self._is_hardware:
                     logger.info(f"Camera device {settings.CAMERA_DEVICE} not openable; using mock fallback")
+                elif settings.CAMERA_VISION_ENABLED:
+                    self._detector = CanopyDetector(settings.CANOPY_READY_RATIO)
             except Exception as exc:
                 logger.info(f"OpenCV/Camera hardware probe: {exc}; using mock fallback")
 
@@ -1042,6 +1050,8 @@ class CameraService:
                 pass
             self._cv2_cap = None
         self._is_hardware = False
+        self._detector = None
+        self._canopy = None
         logger.info("Camera service stopped")
 
     def _capture_frame_sync(self) -> bytes:
@@ -1054,6 +1064,9 @@ class CameraService:
 
                 ret, frame = self._cv2_cap.read()  # type: ignore[attr-defined]
                 if ret and frame is not None:
+                    if self._detector is not None:
+                        self._canopy = self._detector.detect(frame)
+                        self._detector.annotate(frame, self._canopy)
                     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 80]
                     success, enc_jpg = cv2.imencode(".jpg", frame, encode_param)
                     if success:
@@ -1110,6 +1123,9 @@ class CameraService:
             frame_count=self._frame_count,
             last_frame_age_ms=age_ms,
             is_hardware=self._is_hardware,
+            vision_enabled=self._detector is not None,
+            canopy_ratio=round(self._canopy.ratio, 3) if self._canopy else None,
+            canopy_detected=self._canopy.detected if self._canopy else False,
         )
 
     def set_active(self, active: bool) -> CameraStatus:

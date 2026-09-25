@@ -15,6 +15,7 @@
 	import { CameraCard } from '$lib/features/camera';
 	import { sendRobotCommand, getRobotStatus } from '$lib/features/robot/api';
 	import ArmPreview from '$lib/features/robot/ui/arm-preview.svelte';
+	import CommandPad from '$lib/features/robot/ui/command-pad.svelte';
 	import MecanumDrivePreview from '$lib/features/robot/ui/mecanum-drive-preview.svelte';
 	import CompactFieldMonitor from '$lib/features/telemetry/components/compact-field-monitor.svelte';
 	import {
@@ -28,7 +29,6 @@
 	let refreshing = $state(false);
 	let error = $state<string | null>(null);
 	let commandError = $state<string | null>(null);
-	let commandInFlight = $state(false);
 
 	const isOnline = $derived(status.state === 'streaming');
 	const statusAge = $derived(
@@ -90,19 +90,55 @@
 
 	async function send(command: RobotCommand) {
 		commandError = null;
-		commandInFlight = true;
 		try {
 			await sendRobotCommand(command);
 		} catch (cause) {
 			commandError = cause instanceof Error ? cause.message : 'Command failed';
-		} finally {
-			commandInFlight = false;
 		}
 	}
 
 	async function emergencyStop() {
 		await send({ channel: 'all', code: 0 });
 	}
+
+	function showCommandError(message: string | null) {
+		commandError = message;
+	}
+
+	const driveGrid = [
+		{ code: 5, label: '↖', hint: 'เฉียงหน้าซ้าย' },
+		{ code: 1, label: '↑', hint: 'เดินหน้า' },
+		{ code: 6, label: '↗', hint: 'เฉียงหน้าขวา' },
+		{ code: 3, label: '←', hint: 'เลื่อนซ้าย' },
+		{ code: 0, label: 'STOP', hint: 'หยุด' },
+		{ code: 4, label: '→', hint: 'เลื่อนขวา' },
+		{ code: 7, label: '↙', hint: 'เฉียงหลังซ้าย' },
+		{ code: 2, label: '↓', hint: 'ถอยหลัง' },
+		{ code: 8, label: '↘', hint: 'เฉียงหลังขวา' }
+	];
+	const driveSpin = [
+		{ code: 9, label: '⟲ หมุนซ้าย', hint: 'หมุนตัวซ้าย' },
+		{ code: 10, label: '⟳ หมุนขวา', hint: 'หมุนตัวขวา' }
+	];
+	const armGrid = [
+		null,
+		{ code: 1, label: '↑', hint: 'ยกแขนขึ้น' },
+		null,
+		{ code: 3, label: '←', hint: 'หมุนแขนซ้าย' },
+		{ code: 0, label: 'STOP', hint: 'หยุดแขน' },
+		{ code: 4, label: '→', hint: 'หมุนแขนขวา' },
+		null,
+		{ code: 2, label: '↓', hint: 'ลดแขนลง' },
+		null
+	];
+	const armHead = [
+		{ code: 13, label: 'หัวฉีดขึ้น', hint: 'ยกหัวฉีด' },
+		{ code: 14, label: 'หัวฉีดลง', hint: 'ลดหัวฉีด' }
+	];
+	const pumpTaps = [
+		{ code: 11, label: 'ปั๊ม ON', tone: 'on' as const },
+		{ code: 12, label: 'ปั๊ม OFF', tone: 'off' as const }
+	];
 </script>
 
 <svelte:head>
@@ -133,11 +169,8 @@
 					<RefreshCw size={15} class={refreshing ? 'spin' : ''} />
 					{refreshing ? 'กำลังเช็ค' : 'เช็คสถานะ'}
 				</button>
-				<button
-					class="emergency-button header-emergency"
-					type="button"
-					onclick={emergencyStop}
-					disabled={commandInFlight}><AlertTriangle size={15} /> หยุดทั้งหมด</button
+				<button class="emergency-button header-emergency" type="button" onclick={emergencyStop}
+					><AlertTriangle size={15} /> หยุดทั้งหมด</button
 				>
 			</div>
 		</header>
@@ -205,6 +238,13 @@
 					stale={!isOnline}
 					compact
 				/>
+				<CommandPad
+					channel="motor"
+					grid={driveGrid}
+					extra={driveSpin}
+					disabled={!isOnline}
+					onError={showCommandError}
+				/>
 			</section>
 
 			<section class="panel arm-panel">
@@ -226,6 +266,14 @@
 					active={isOnline && status.arm_can_alive}
 					stale={!isOnline}
 					compact
+				/>
+				<CommandPad
+					channel="arm"
+					grid={armGrid}
+					extra={armHead}
+					taps={pumpTaps}
+					disabled={!isOnline}
+					onError={showCommandError}
 				/>
 			</section>
 		</div>

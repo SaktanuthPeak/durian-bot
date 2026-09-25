@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const robotStatusSchema = z.object({
 	type: z.literal('robot_status'),
-	protocol: z.enum(['RB1', 'RB2', 'RB3', 'RB4', 'MC1']).nullable(),
+	protocol: z.enum(['RB1', 'RB2', 'RB3', 'RB4', 'MC1', 'MS1']).nullable(),
 	port: z.string(),
 	baudrate: z.number().int(),
 	state: z.enum(['disabled', 'connecting', 'streaming', 'disconnected']),

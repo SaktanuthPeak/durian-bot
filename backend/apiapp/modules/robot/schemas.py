@@ -9,7 +9,7 @@ RobotLinkState = Literal["disabled", "connecting", "streaming", "disconnected"]
 
 class RobotStatusResponse(BaseModel):
     type: Literal["robot_status"]
-    protocol: Literal["RB1", "RB2", "RB3", "RB4", "MC1"] | None
+    protocol: Literal["RB1", "RB2", "RB3", "RB4", "MC1", "MS1"] | None
     port: str
     baudrate: int
     state: RobotLinkState

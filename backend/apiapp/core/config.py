@@ -96,6 +96,9 @@ class Settings(BaseSettings):
     CAMERA_HEIGHT: int = 480
     CAMERA_FPS: int = 15
     CAMERA_AUTO_START: bool = True
+    # OpenCV green-canopy overlay on hardware frames (see infrastructure/vision.py)
+    CAMERA_VISION_ENABLED: bool = True
+    CANOPY_READY_RATIO: float = 0.25
 
     # find query
     DEFAULT_PAGE_SIZE: int = 20

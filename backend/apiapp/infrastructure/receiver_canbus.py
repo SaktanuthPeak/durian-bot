@@ -1,11 +1,15 @@
 """USB serial transport for the CAN receiver / FastAPI bridge Arduino.
 
-The Mega motor controller emits one MC1 snapshot every 100 ms. Legacy receivers may
+The Mega motor controller emits one MC1 (or MS1 from the simplified sketch) snapshot every 100 ms. Legacy receivers may
 still emit RB1, RB2, RB3, or RB4:
     RB2,motor_code,motor_alive,arm_code,arm_alive,voltage_mV,voltage_adc,seq*CK
     RB3,motor_code,motor_alive,arm_code,arm_alive,voltage_mV,voltage_adc,flame_front,flame_right,flame_rear,flame_left,humidity_percent,seq*CK
     RB4,motor_code,motor_alive,arm_code,arm_alive,voltage_mV,voltage_adc,axis1_pwm,axis2_pwm,axis3_pwm,pump_on,seq*CK
     MC1,motor_code,motor_alive,arm_code,arm_alive,voltage_mV,voltage_adc,ir_front,ir_right,ir_rear,ir_left,enc_fl,enc_fr,enc_bl,enc_br,speed_fl,speed_fr,speed_bl,speed_br,seq*CK
+    MS1,motor_code,motor_alive,arm_code,arm_alive,voltage_mV,voltage_adc,pwm,age_ms,seq*CK
+
+MS1 comes from firmware/motor_controller_simplify: the Mega drives the wheels, forwards
+arm commands to CAN and reads the battery module; it has no IR or encoder inputs.
 
 RB4 is the arm-controller format. The three axis fields are the latest PCA9685
 PWM commands (not encoder-measured angles), and ``pump_on`` is 0 or 1.
@@ -54,7 +58,7 @@ ReceiverParseErrorSink = Callable[[], None]
 
 @dataclass(frozen=True, slots=True)
 class ReceiverSample:
-    protocol: Literal["RB1", "RB2", "RB3", "RB4", "MC1"]
+    protocol: Literal["RB1", "RB2", "RB3", "RB4", "MC1", "MS1"]
     motor_code: int
     motor_alive: bool
     arm_code: int
@@ -88,9 +92,9 @@ class ReceiverSample:
 
 
 def parse_line(raw: bytes) -> ReceiverSample | None:
-    """Decode one MC1/RB1/RB2/RB3/RB4 line and reject malformed frames."""
+    """Decode one MC1/MS1/RB1/RB2/RB3/RB4 line and reject malformed frames."""
     text = raw.decode("ascii", errors="ignore").strip()
-    if not text.startswith(("MC1,", "RB1,", "RB2,", "RB3,", "RB4,")):
+    if not text.startswith(("MC1,", "MS1,", "RB1,", "RB2,", "RB3,", "RB4,")):
         return None
 
     payload, separator, checksum_text = text.partition("*")
@@ -118,6 +122,8 @@ def parse_line(raw: bytes) -> ReceiverSample | None:
     if fields[0] == "RB4" and len(fields) != 12:
         return None
     if fields[0] == "MC1" and len(fields) != 20:
+        return None
+    if fields[0] == "MS1" and len(fields) != 10:
         return None
 
     try:
@@ -194,6 +200,19 @@ def parse_line(raw: bytes) -> ReceiverSample | None:
             speed_bl = float(fields[17])
             speed_br = float(fields[18])
             sequence = int(fields[19])
+        elif fields[0] == "MS1":
+            battery_millivolts = int(fields[5])
+            battery_adc = int(fields[6])
+            pwm = int(fields[7])
+            age_ms = int(fields[8])
+            if not 0 <= pwm <= 255 or age_ms < 0:
+                return None
+            flame_front = flame_right = flame_rear = flame_left = 0
+            flame_valid = False
+            arm_axis_1_pwm = arm_axis_2_pwm = arm_axis_3_pwm = None
+            arm_pump_on = None
+            humidity_percent = None
+            sequence = int(fields[9])
         else:
             battery_millivolts = 0
             battery_adc = 0
@@ -477,7 +496,7 @@ class ReceiverCanbusService:
                         continue
                     sample = parse_line(line)
                     if sample is None:
-                        if line.lstrip().startswith((b"MC1,", b"RB1,", b"RB2,", b"RB3,", b"RB4,")):
+                        if line.lstrip().startswith((b"MC1,", b"MS1,", b"RB1,", b"RB2,", b"RB3,", b"RB4,")):
                             with self._lock:
                                 self._parse_errors += 1
                             self._notify_parse_error()

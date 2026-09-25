@@ -13,6 +13,9 @@ class CameraStatusResponse(BaseModel):
     frame_count: int = Field(description="Total frames generated/captured since start")
     last_frame_age_ms: int = Field(description="Milliseconds since the last frame was captured")
     is_hardware: bool = Field(description="True if captured from physical camera hardware, False if mock")
+    vision_enabled: bool = Field(default=False, description="True when the OpenCV canopy overlay is running")
+    canopy_ratio: float | None = Field(default=None, description="Share of green canopy pixels in the last frame, 0-1")
+    canopy_detected: bool = Field(default=False, description="Canopy ratio reached CANOPY_READY_RATIO")
 
 
 class CameraControlRequest(BaseModel):

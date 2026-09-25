@@ -28,6 +28,9 @@ class CameraUseCase:
             frame_count=st.frame_count,
             last_frame_age_ms=st.last_frame_age_ms,
             is_hardware=st.is_hardware,
+            vision_enabled=st.vision_enabled,
+            canopy_ratio=st.canopy_ratio,
+            canopy_detected=st.canopy_detected,
         )
 
     def control_camera(self, req: CameraControlRequest) -> CameraStatusResponse:

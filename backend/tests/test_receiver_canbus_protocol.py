@@ -1,4 +1,4 @@
-"""MC1/RB2/RB3/RB4 receiver telemetry protocol tests."""
+"""MC1/MS1/RB2/RB3/RB4 receiver telemetry protocol tests."""
 
 from apiapp.infrastructure.receiver_canbus import STATUS_NAMES, parse_line
 
@@ -135,3 +135,40 @@ def test_rejects_mega_mc1_frame_with_invalid_ir_value() -> None:
 def test_rejects_arm_controller_rb4_invalid_pose() -> None:
     assert parse_line(_line("RB4,6,1,13,1,0,0,4096,278,331,0,43")) is None
     assert parse_line(_line("RB4,6,1,13,1,0,0,305,278,331,2,43")) is None
+
+
+def test_parses_simplified_mega_ms1_frame_with_battery() -> None:
+    sample = parse_line(_line("MS1,1,1,-1,0,12048,493,150,24,812"))
+
+    assert sample is not None
+    assert sample.protocol == "MS1"
+    assert sample.motor_code == 1
+    assert STATUS_NAMES[sample.motor_code] == "FORWARD"
+    assert sample.motor_alive is True
+    assert sample.arm_code == -1
+    assert sample.arm_alive is False
+    assert sample.battery_millivolts == 12048
+    assert sample.battery_adc == 493
+    assert sample.flame_valid is False
+    assert sample.arm_pump_on is None
+    assert sample.sequence == 812
+
+
+def test_parses_ms1_example_from_firmware_header() -> None:
+    sample = parse_line(b"MS1,1,1,-1,0,12048,493,150,24,812*27\r\n")
+
+    assert sample is not None
+    assert sample.protocol == "MS1"
+    assert sample.battery_millivolts == 12048
+
+
+def test_rejects_invalid_ms1_frames() -> None:
+    # Old simplified format: comma before checksum, no '*'.
+    assert parse_line(b"MC1,12,1,1,150,24,3F\r\n") is None
+    # Earlier MS1 without battery fields.
+    assert parse_line(_line("MS1,1,1,-1,0,150,24,812")) is None
+    assert parse_line(_line("MS1,1,1,-1,0,12048,1024,150,24,812")) is None
+    assert parse_line(_line("MS1,1,1,-1,0,-1,493,150,24,812")) is None
+    assert parse_line(_line("MS1,1,1,-1,0,12048,493,256,24,812")) is None
+    assert parse_line(_line("MS1,1,1,-1,0,12048,493,150,-1,812")) is None
+    assert parse_line(_line("MS1,15,1,-1,0,12048,493,150,24,812")) is None

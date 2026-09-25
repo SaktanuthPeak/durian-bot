@@ -71,6 +71,8 @@ services:
       CAMERA_HEIGHT: "${CAMERA_HEIGHT:-480}"
       CAMERA_FPS: "${CAMERA_FPS:-15}"
       CAMERA_AUTO_START: "${CAMERA_AUTO_START:-True}"
+      CAMERA_VISION_ENABLED: "${CAMERA_VISION_ENABLED:-True}"
+      CANOPY_READY_RATIO: "${CANOPY_READY_RATIO:-0.25}"
     ports:
       # Loopback by default: this port only exists for `pnpm run openapi` and curl
       # debugging *on the Pi*, the UI reaches the API through the frontend's nginx.

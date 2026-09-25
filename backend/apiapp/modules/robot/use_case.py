@@ -10,10 +10,12 @@ class RobotUseCase:
         return RobotStatusResponse.model_validate(receiver_canbus_service.status())
 
     def send_command(self, request: RobotCommandRequest) -> RobotCommandResponse:
-        if request.channel == "motor" and request.code > 8:
+        # 9/10 (spin) need motor_controller_simplify; the older can_receiver bridge
+        # answers ERR for them, which is harmless.
+        if request.channel == "motor" and request.code > 10:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Motor codes must be between 0 and 8",
+                detail="Motor codes must be between 0 and 10",
             )
         if request.channel == "arm" and request.code not in {
             0,
