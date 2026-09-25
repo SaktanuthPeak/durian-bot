@@ -20,7 +20,7 @@ RC fail-over ตามที่อธิบายด้านล่าง — �
 
 | หมวดหมู่ | อุปกรณ์ที่เลือกใช้ | หน้าที่การทำงาน |
 | :--- | :--- | :--- |
-| **หน่วยประมวลผลหลัก** | Raspberry Pi 3 Model B (RAM 1GB) | รัน Web Server, รับภาพจากกล้อง USB, เป็นจุดปล่อย Wi-Fi (Access Point) |
+| **หน่วยประมวลผลหลัก** | Raspberry Pi 5 (RAM 8GB) | รัน Web Server, รับภาพจากกล้อง USB, เป็นจุดปล่อย Wi-Fi (Access Point) |
 | **ไมโครคอนโทรลเลอร์** | Arduino Mega (1 บอร์ด), Arduino Uno (2 บอร์ด) | ควบคุมมอเตอร์ล้อ, อ่านค่าเซนเซอร์, สั่งงานลิฟต์หน้ากาก, สลับโหมด Fail-Safe |
 | **ระบบสื่อสาร (CAN Bus)** | MCP2515 CAN Module (4 ตัว) | เชื่อมต่อบอร์ดทั้งหมดเข้าด้วยกันผ่าน SPI (Pi 1 ตัว, Mega 1 ตัว, Uno 2 ตัว) |
 | **เซนเซอร์ตรวจจับ** | MPU6050, Flame Sensor / MQ-2 | วัดความเอียงป้องกันรถคว่ำ, ตรวจจับความร้อนและควันไฟ |
@@ -38,7 +38,7 @@ RC fail-over ตามที่อธิบายด้านล่าง — �
 
 ## 4. AI & Computer Vision Pipeline
 
-- **Processing Unit:** รันโมเดลบนคอมพิวเตอร์/โน้ตบุ๊กของคนขับ (Offloaded Inference) เพื่อลดภาระ RAM และ CPU ของ Raspberry Pi 3
+- **Processing Unit:** รันโมเดลบนคอมพิวเตอร์/โน้ตบุ๊กของคนขับ (Offloaded Inference) เพื่อลดภาระ CPU ของ Raspberry Pi (Pi 5 RAM 8GB รันโมเดลขนาดเล็กอย่าง YOLO11n บนตัวเองได้ แต่ fps ต่ำกว่าบนโน้ตบุ๊ก)
 - **Model Selection:** YOLO-Nano หรือ YOLO11n (2 Classes: `person` และ `fire/smoke`)
 - **Hardware Trigger:** หาก AI ตรวจพบผู้ประสบภัย (Person detected) และหุ่นยนต์อยู่ในระยะที่เหมาะสม ระบบจะส่งคำสั่งไปยังบอร์ด Arduino ให้รัน NEMA 17 เพื่อยกลิฟต์หน้ากากขึ้นอัตโนมัติ
 

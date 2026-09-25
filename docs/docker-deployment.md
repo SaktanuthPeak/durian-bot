@@ -118,6 +118,9 @@ running under compose — use one approach or the other, not both.
 
 ## Frontend build OOM on Pi 3 (1GB RAM)
 
+> The robot now runs on a **Raspberry Pi 5 (8GB)**, which builds both images natively without
+> extra swap. This section only applies if you go back to a Pi 3.
+
 `pnpm run build` runs a SvelteKit SSR+client `vite build`, which needs more heap than a
 Pi 3's default swap (`dphys-swapfile`'s 100MB) leaves available — the build dies with
 `FATAL ERROR: Ineffective mark-compacts near heap limit`. The Dockerfile now sets

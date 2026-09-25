@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Cross-build backend + frontend images for the Pi's arch, ship them over SSH, and
-# start the stack there without a local build (avoids the Pi 3 OOM in vite build --
+# start the stack there without a local build (optional on the Pi 5 8GB, which builds
+# natively; it was needed to avoid the Pi 3 OOM in vite build --
 # see docs/docker-deployment.md "Cross-building on a laptop, running on the Pi").
 #
 # Usage:
