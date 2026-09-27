@@ -54,7 +54,7 @@ CAN Bus และ RTOS ร่วมกับการประมวลผลภ
 
 ระบบแบ่งออกเป็น 3 ชั้น ได้แก่ ชั้นผู้ใช้ซึ่งประกอบด้วยจอยสติ๊ก PS2 และเว็บเบราว์เซอร์ ชั้นประมวลผลบน
 Raspberry Pi 5 ซึ่งทำหน้าที่เป็น Wi-Fi Access Point และให้บริการ FastAPI, เว็บ SvelteKit และ OpenCV
-และชั้นควบคุมฮาร์ดแวร์ซึ่งประกอบด้วย Arduino 4 บอร์ดที่สื่อสารกันผ่าน CAN Bus ความเร็ว 500 kbps
+และชั้นควบคุมฮาร์ดแวร์ซึ่งประกอบด้วย Arduino 3 บอร์ดที่สื่อสารกันผ่าน CAN Bus ความเร็ว 500 kbps
 เฟิร์มแวร์ประยุกต์ใช้ GPIO, PWM, ADC, External Interrupt, Watchdog Timer, UART, SPI, I2C, CAN Bus และ FreeRTOS
 Raspberry Pi และ Arduino สื่อสารกันด้วยโปรโตคอลข้อความ ASCII ที่มี XOR checksum และทุกชั้นของระบบมี heartbeat
 และ timeout เพื่อให้หุ่นยนต์หยุดทำงานเองเมื่อสัญญาณขาดหาย นอกจากนี้กล้องบนตัวหุ่นยนต์ยังส่งภาพสดขึ้นเว็บ
@@ -124,11 +124,10 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 1. **Arduino Uno R3** ใช้ไมโครคอนโทรลเลอร์ ATmega328P ความถี่ 16 MHz มี Flash 32 KB, SRAM 2 KB, EEPROM 1 KB,
    Digital I/O 14 ขา (PWM 6 ขา), Analog Input 6 ขา, USART 1 ชุด, SPI และ I2C (TWI)
-   ในโครงงานนี้ใช้เป็นบอร์ดอ่านจอยสติ๊ก (`can-sender`), บอร์ดควบคุมแขนและปั๊ม (`arm_controller`)
-   และบอร์ดแปลงสัญญาณ USB กับ CAN (`can_receiver`)
+   ในโครงงานนี้ใช้ 2 บอร์ด คือ บอร์ดรับค่าจากรีโมต และบอร์ดควบคุมแขนหุ่นยนต์
 2. **Arduino Mega 2560** ใช้ไมโครคอนโทรลเลอร์ ATmega2560 ความถี่ 16 MHz มี Flash 256 KB, SRAM 8 KB, EEPROM 4 KB,
-   Digital I/O 54 ขา (PWM 15 ขา), Analog Input 16 ขา และ USART 4 ชุด ใช้ขับมอเตอร์ 4 ล้อ
-   (`motor_controller_simplify`) และเชื่อมต่อกับ Raspberry Pi ผ่าน USB
+   Digital I/O 54 ขา (PWM 15 ขา), Analog Input 16 ขา และ USART 4 ชุด ใช้เป็นบอร์ดควบคุมมอเตอร์
+   ซึ่งขับมอเตอร์ 4 ล้อและเชื่อมต่อกับ Raspberry Pi ผ่าน USB
 3. **Raspberry Pi 5 (RAM 8 GB)** ใช้ CPU Cortex-A76 4 คอร์ ความถี่ 2.4 GHz, RAM LPDDR4X 8 GB, Wi-Fi 5 แบบ dual-band,
    USB 3.0 จำนวน 2 พอร์ต และ USB 2.0 จำนวน 2 พอร์ต ใช้แหล่งจ่ายไฟ USB-C 5 V 5 A (27 W)
    ทำหน้าที่เป็น Wi-Fi Access Point ให้บริการ FastAPI และเว็บผ่าน Docker และอ่านภาพจากกล้อง USB ด้วย OpenCV
@@ -153,7 +152,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 ### 1.3.2 Software
 
-1. **Arduino IDE 2.x** ใช้เขียน คอมไพล์ และอัปโหลดเฟิร์มแวร์ทั้ง 4 บอร์ด
+1. **Arduino IDE 2.x** ใช้เขียน คอมไพล์ และอัปโหลดเฟิร์มแวร์ทั้ง 3 บอร์ด
 2. **Raspberry Pi OS 64-bit (Bookworm)** เป็นระบบปฏิบัติการของ Raspberry Pi 5 และตั้งค่าเป็น Wi-Fi Access Point
    ด้วย NetworkManager ผ่านสคริปต์ `scripts/setup-rpi-ap.sh`
 3. **Docker และ Docker Compose** ใช้รัน backend และ frontend เป็น container บน Raspberry Pi
@@ -204,12 +203,8 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 **รูปที่ 2.1** แผนภาพสถาปัตยกรรมระบบ Durian Bot
 
-การเชื่อมต่อ USB ระหว่าง Raspberry Pi กับ Arduino ทำได้ 2 รูปแบบ ได้แก่
-
-- **รูปแบบ A (ใช้งานปัจจุบัน)** เชื่อมต่อ Arduino Mega (`motor_controller_simplify`) กับ Raspberry Pi
-  โดย Mega ขับล้อตามคำสั่ง `CMD:MOTOR` และส่งต่อคำสั่ง `CMD:ARM` เข้า CAN ID `0x101` ไปยังบอร์ด `arm_controller`
-- **รูปแบบ B (bridge)** เชื่อมต่อ Arduino Uno (`can_receiver`) กับ Raspberry Pi โดยบอร์ดรับคำสั่ง `CMD:...`
-  แล้วส่งต่อเข้า CAN ID `0x100` และควบคุมแขนกับปั๊มด้วยตนเอง
+Raspberry Pi เชื่อมต่อกับบอร์ดควบคุมมอเตอร์ (Arduino Mega) ผ่าน USB serial โดยบอร์ดควบคุมมอเตอร์ขับล้อตามคำสั่ง `CMD:MOTOR`
+ส่งต่อคำสั่ง `CMD:ARM` เข้า CAN ID `0x101` ไปยังบอร์ดควบคุมแขนหุ่นยนต์ และส่ง telemetry กลับไปยัง Raspberry Pi
 
 ### 2.1.1 Schematic Diagram
 
@@ -219,7 +214,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 ### 2.1.2 ตารางการต่อขา
 
-**ตารางที่ 2.1** การต่อขาของบอร์ด can-sender (Arduino Uno)
+**ตารางที่ 2.1** การต่อขาของบอร์ดรับค่าจากรีโมต (Arduino Uno)
 
 | อุปกรณ์            | ขา Uno          |
 | ------------------------- | ----------------- |
@@ -227,7 +222,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 | MCP2515 CS                | D10               |
 | MCP2515 SI / SO / SCK     | D11 / D12 / D13   |
 
-**ตารางที่ 2.2** การต่อขาของบอร์ด arm_controller (Arduino Uno)
+**ตารางที่ 2.2** การต่อขาของบอร์ดควบคุมแขนหุ่นยนต์ (Arduino Uno)
 
 | อุปกรณ์                 | ขา Uno                                                              |
 | ------------------------------ | --------------------------------------------------------------------- |
@@ -238,7 +233,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 | Relay ปั๊ม IN (active LOW) | D4                                                                    |
 | PCA9685 ช่อง 0 / 1 / 2     | เซอร์โว ซ้าย-ขวา / หน้า-หลัง / ยกหัวฉีด |
 
-**ตารางที่ 2.3** การต่อขาของบอร์ด motor_controller_simplify (Arduino Mega 2560)
+**ตารางที่ 2.3** การต่อขาของบอร์ดควบคุมมอเตอร์ (Arduino Mega 2560)
 
 | อุปกรณ์                            | ขา L298N         | ขา Mega             | หมายเหตุ                   |
 | ----------------------------------------- | ------------------ | --------------------- | ---------------------------------- |
@@ -258,8 +253,8 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 ระบบใช้ CAN ID แบบ Standard 11 บิต จำนวน 2 ค่า และบรรจุรหัสคำสั่งขนาด 1 ไบต์ ดังนี้
 
-- `0x100` ส่งจาก can-sender (หรือ can_receiver ในรูปแบบ B) ไปยัง Arduino Mega บรรจุรหัสมอเตอร์ 0–10
-- `0x101` ส่งจาก can-sender และ Arduino Mega (กรณีคำสั่งแขนจากหน้าเว็บ) ไปยัง arm_controller บรรจุรหัสแขน 0–8 และ 11–14
+- `0x100` ส่งจากบอร์ดรับค่าจากรีโมต ไปยังบอร์ดควบคุมมอเตอร์ บรรจุรหัสมอเตอร์ 0–10
+- `0x101` ส่งจากบอร์ดรับค่าจากรีโมต และบอร์ดควบคุมมอเตอร์ (กรณีคำสั่งแขนจากหน้าเว็บ) ไปยังบอร์ดควบคุมแขนหุ่นยนต์ บรรจุรหัสแขน 0–8 และ 11–14
 
 ความหมายของรหัสคำสั่งแต่ละค่าและปุ่มของจอยสติ๊กที่สอดคล้องกันแสดงในตารางที่ 2.4
 
@@ -288,11 +283,11 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 
 ข้อมูลในระบบไหลผ่าน 4 เส้นทาง ดังนี้
 
-1. **คำสั่งจากจอยสติ๊ก** ส่งจากจอยสติ๊ก PS2 ไปยัง can-sender แล้วส่งต่อบน CAN ID `0x100` และ `0x101`
-   ไปยัง Arduino Mega และ arm_controller ทุก 50 ms
-2. **คำสั่งจากหน้าเว็บ** ส่งจากหน้าเว็บไปยัง FastAPI แล้วส่งเป็นข้อความ `CMD:...` ผ่าน USB serial ไปยัง Arduino Mega
-   ซึ่งขับล้อและส่งคำสั่งแขนต่อบน CAN ID `0x101` ให้ arm_controller โดยหน้าเว็บส่งคำสั่งซ้ำทุก 200 ms ขณะกดปุ่มค้าง
-3. **Telemetry** ส่งจาก Arduino Mega เป็นข้อความ `MS1` ผ่าน USB serial ไปยัง FastAPI แล้วส่งต่อให้หน้าเว็บ
+1. **คำสั่งจากจอยสติ๊ก** ส่งจากจอยสติ๊ก PS2 ไปยังบอร์ดรับค่าจากรีโมต แล้วส่งต่อบน CAN ID `0x100` และ `0x101`
+   ไปยังบอร์ดควบคุมมอเตอร์และบอร์ดควบคุมแขนหุ่นยนต์ ทุก 50 ms
+2. **คำสั่งจากหน้าเว็บ** ส่งจากหน้าเว็บไปยัง FastAPI แล้วส่งเป็นข้อความ `CMD:...` ผ่าน USB serial ไปยังบอร์ดควบคุมมอเตอร์
+   ซึ่งขับล้อและส่งคำสั่งแขนต่อบน CAN ID `0x101` ให้บอร์ดควบคุมแขนหุ่นยนต์ โดยหน้าเว็บส่งคำสั่งซ้ำทุก 200 ms ขณะกดปุ่มค้าง
+3. **Telemetry** ส่งจากบอร์ดควบคุมมอเตอร์เป็นข้อความ `MS1` ผ่าน USB serial ไปยัง FastAPI แล้วส่งต่อให้หน้าเว็บ
    ผ่าน REST และ WebSocket ทุก 100 ms หรือทันทีเมื่อสถานะเปลี่ยน
 4. **ภาพจากกล้อง** ส่งจาก USB Webcam ไปยัง OpenCV แล้วส่งเป็น MJPEG ไปแสดงบนหน้าเว็บที่อัตรา 15 fps (ปรับตั้งได้)
 
@@ -323,16 +318,15 @@ PING                  ตรวจลิงก์ → ตอบ {"t":"PONG"}
 #### 2.2.2.2 Telemetry จาก Arduino ไปยัง Raspberry Pi
 
 ```text
-MS1,motor,motor_alive,arm,arm_alive,battery_mV,battery_adc,pwm,age_ms,seq*CK   (motor_controller_simplify, ทุก 100 ms)
-RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiver)
+MS1,motor,motor_alive,arm,arm_alive,battery_mV,battery_adc,pwm,age_ms,seq*CK   (ส่งทุก 100 ms)
 ```
 
-`MS1` เป็นคำนำหน้า (prefix) ของบรรทัด telemetry จาก Arduino Mega ย่อมาจาก **M**otor controller **S**implify รุ่นที่ **1**
+`MS1` เป็นคำนำหน้า (prefix) ของบรรทัด telemetry จากบอร์ดควบคุมมอเตอร์ ย่อมาจาก **M**otor controller **S**implify รุ่นที่ **1**
 โดยตั้งชื่อแยกจาก `MC1` ซึ่งเป็นรูปแบบของบอร์ดรุ่นก่อน เพื่อให้ backend แยกรูปแบบของข้อมูลได้ถูกต้อง
 
 การออกแบบโปรโตคอลมีเหตุผลดังนี้
 
-- **ใช้ prefix** (`MS1`, `RB4`) เพื่อคัดข้อความที่ bootloader พิมพ์ออกมาขณะรีเซ็ตทิ้ง และเพื่อระบุเวอร์ชันของรูปแบบข้อมูล
+- **ใช้ prefix** (`MS1`) เพื่อคัดข้อความที่ bootloader พิมพ์ออกมาขณะรีเซ็ตทิ้ง และเพื่อระบุเวอร์ชันของรูปแบบข้อมูล
 - **ใช้ CSV แทน JSON** เพราะสร้างข้อความได้ด้วย `snprintf` เพียงครั้งเดียว ไม่ต้องใช้ไลบรารีเพิ่ม
   และประหยัดหน่วยความจำ SRAM 2 KB ของ Arduino Uno
 - **ใช้ XOR checksum** เพื่อตรวจจับข้อมูลที่ผิดเพี้ยนจากสัญญาณรบกวนของมอเตอร์และปั๊ม บรรทัดที่ checksum ไม่ถูกต้องจะถูกทิ้ง
@@ -362,9 +356,9 @@ RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiv
 
 - **หน้าเว็บ** ส่งคำสั่งซ้ำทุก 200 ms ขณะกดปุ่มค้าง และส่ง STOP ทันทีเมื่อปล่อยปุ่ม ส่วน **จอยสติ๊ก** ส่ง heartbeat บน CAN
   ทุก 50 ms แม้คำสั่งเป็น STOP
-- **Arduino Mega** ยกเลิกคำสั่งจาก serial ที่ไม่ได้รับซ้ำเกิน 1 s (หยุดล้อแล้วคืนสิทธิ์ให้จอยสติ๊ก)
+- **บอร์ดควบคุมมอเตอร์** ยกเลิกคำสั่งจาก serial ที่ไม่ได้รับซ้ำเกิน 1 s (หยุดล้อแล้วคืนสิทธิ์ให้จอยสติ๊ก)
   และยกเลิกคำสั่งจาก CAN ที่เกิน 300 ms (หยุดล้อ)
-- **arm_controller** หยุดแขนเมื่อ CAN ขาดหายเกิน 1 s เข้าสู่ software sleep (หยุดแขนและปิดปั๊ม)
+- **บอร์ดควบคุมแขนหุ่นยนต์** หยุดแขนเมื่อ CAN ขาดหายเกิน 1 s เข้าสู่ software sleep (หยุดแขนและปิดปั๊ม)
   เมื่อไม่มีคำสั่งขยับเป็นเวลา 30 s และหากโปรแกรมค้างเกิน 500 ms Watchdog Timer จะรีเซ็ตบอร์ด
   ซึ่งทำให้ปั๊มปิดและเซอร์โวกลับสู่ตำแหน่งปลอดภัย
 - **ปุ่ม E-STOP** บนหน้าเว็บส่งคำสั่ง `CMD:ALL:0` ซึ่งคงสถานะ STOP ไว้ 1 s และส่ง `PUMP_OFF` เพื่อหยุดล้อ แขน และปั๊มพร้อมกัน
@@ -372,18 +366,18 @@ RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiv
 
 ### 2.3.2 การออกแบบ Task บน Arduino Mega 2560 (FreeRTOS)
 
-บอร์ด Arduino Mega ต้องทำงานหลายอย่างพร้อมกันมากที่สุดในระบบ ได้แก่ รับข้อความ CAN รับคำสั่งจาก serial ขับมอเตอร์
+บอร์ดควบคุมมอเตอร์ต้องทำงานหลายอย่างพร้อมกันมากที่สุดในระบบ ได้แก่ รับข้อความ CAN รับคำสั่งจาก serial ขับมอเตอร์
 จับเวลา timeout ส่ง heartbeat ให้แขน อ่านแรงดันแบตเตอรี่ และส่ง telemetry ประกอบกับมี SRAM 8 KB
 เพียงพอสำหรับหลาย task จึงเลือกใช้ FreeRTOS บนบอร์ดนี้ ส่วน Arduino Uno มี SRAM เพียง 2 KB ซึ่งไม่เพียงพอ
-และบอร์ด `arm_controller` ใช้ Watchdog Timer สำหรับรีเซ็ต ซึ่งขัดกับการที่ FreeRTOS ใช้ Watchdog Timer เป็นตัวสร้าง tick
+และบอร์ดควบคุมแขนหุ่นยนต์ ใช้ Watchdog Timer สำหรับรีเซ็ต ซึ่งขัดกับการที่ FreeRTOS ใช้ Watchdog Timer เป็นตัวสร้าง tick
 
 โครงสร้างของ task และช่องทางสื่อสารระหว่าง task แสดงในรูปที่ 2.5 และรายละเอียดของแต่ละ task แสดงในตารางที่ 2.5
 
-![รูปที่ 2.5 โครงสร้าง Task บน Arduino Mega](images/2-3-2-mega-rtos-tasks.png)
+![รูปที่ 2.5 โครงสร้าง Task บนบอร์ดควบคุมมอเตอร์](images/2-3-2-mega-rtos-tasks.png)
 
-**รูปที่ 2.5** โครงสร้าง Task และการสื่อสารระหว่าง Task บน Arduino Mega
+**รูปที่ 2.5** โครงสร้าง Task และการสื่อสารระหว่าง Task บนบอร์ดควบคุมมอเตอร์
 
-**ตารางที่ 2.5** รายละเอียดของ Task บน Arduino Mega
+**ตารางที่ 2.5** รายละเอียดของ Task บนบอร์ดควบคุมมอเตอร์
 
 | Task          | Priority | Stack (byte) | งาน                                                                                                                                                  |
 | ------------- | -------: | -----------: | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -396,23 +390,23 @@ RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiv
 จึงไม่มีตัวแปรที่หลาย task เขียนพร้อมกัน และไม่เกิด race condition ส่วน mutex ใช้เฉพาะกับทรัพยากรที่ต้องใช้ร่วมกันจริง
 ได้แก่ SPI ของ MCP2515, serial และข้อมูล snapshot สำหรับ telemetry
 
-### 2.3.3 Flowchart บอร์ด can-sender
+### 2.3.3 Flowchart บอร์ดรับค่าจากรีโมต
 
-บอร์ด can-sender อ่านจอยสติ๊กทุก 15 ms แปลงค่าแกนอนาล็อกเป็นรหัสคำสั่ง และส่งคำสั่งขึ้น CAN Bus ทุก 50 ms
+บอร์ดรับค่าจากรีโมต อ่านจอยสติ๊กทุก 15 ms แปลงค่าแกนอนาล็อกเป็นรหัสคำสั่ง และส่งคำสั่งขึ้น CAN Bus ทุก 50 ms
 ดังแสดงในรูปที่ 2.6
 
-![รูปที่ 2.6 Flowchart บอร์ด can-sender](images/2-3-3-flowchart-can-sender.png)
+![รูปที่ 2.6 Flowchart บอร์ดรับค่าจากรีโมต](images/2-3-3-flowchart-can-sender.png)
 
-**รูปที่ 2.6** Flowchart การทำงานของบอร์ด can-sender
+**รูปที่ 2.6** Flowchart การทำงานของบอร์ดรับค่าจากรีโมต
 
-### 2.3.4 Flowchart บอร์ด arm_controller
+### 2.3.4 Flowchart บอร์ดควบคุมแขนหุ่นยนต์
 
-บอร์ด arm_controller รับข้อความ CAN ผ่าน External Interrupt ขยับเซอร์โวอย่างนุ่มนวล ควบคุมปั๊ม
+บอร์ดควบคุมแขนหุ่นยนต์ รับข้อความ CAN ผ่าน External Interrupt ขยับเซอร์โวอย่างนุ่มนวล ควบคุมปั๊ม
 และมีกลไก fail-safe ได้แก่ timeout ของสัญญาณ CAN, software sleep และ Watchdog Timer ดังแสดงในรูปที่ 2.7
 
-![รูปที่ 2.7 Flowchart บอร์ด arm_controller](images/2-3-4-flowchart-arm-controller.png)
+![รูปที่ 2.7 Flowchart บอร์ดควบคุมแขนหุ่นยนต์](images/2-3-4-flowchart-arm-controller.png)
 
-**รูปที่ 2.7** Flowchart การทำงานของบอร์ด arm_controller
+**รูปที่ 2.7** Flowchart การทำงานของบอร์ดควบคุมแขนหุ่นยนต์
 
 ### 2.3.5 การออกแบบการประมวลผลภาพเพื่อตรวจจับทรงพุ่ม
 
@@ -471,11 +465,11 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 1. **USB Webcam (UVC)** Raspberry Pi อ่านภาพด้วย OpenCV `VideoCapture` ผ่าน V4L2 ในรูปแบบ MJPG
    ได้ภาพสี BGR ขนาด 640×480 pixel ความละเอียดช่องสีละ 8 บิต
-2. **Battery Voltage Sensor** (วงจรแบ่งแรงดัน 30 kΩ และ 7.5 kΩ) Arduino Mega อ่านที่ ADC ช่อง A0 ความละเอียด 10 บิต
+2. **Battery Voltage Sensor** (วงจรแบ่งแรงดัน 30 kΩ และ 7.5 kΩ) บอร์ดควบคุมมอเตอร์อ่านที่ ADC ช่อง A0 ความละเอียด 10 บิต
    ได้ค่า 0–1023 ซึ่งสอดคล้องกับแรงดันที่ขา 0–5 V หรือแรงดันแบตเตอรี่ 0–25 V
-3. **จอยสติ๊ก PS2** บอร์ด can-sender อ่านแกนอนาล็อก 4 แกนได้ค่า 0–255 (ค่ากึ่งกลาง 128 และหากได้ 255 ทั้งสองแกน
+3. **จอยสติ๊ก PS2** บอร์ดรับค่าจากรีโมต อ่านแกนอนาล็อก 4 แกนได้ค่า 0–255 (ค่ากึ่งกลาง 128 และหากได้ 255 ทั้งสองแกน
    หมายถึงจอยสติ๊กไม่ตอบสนอง) และอ่านสถานะปุ่ม 16 ปุ่มแบบกดหรือไม่กด
-4. **MCP2515 (CAN)** Arduino Mega และ arm_controller อ่านได้ CAN ID และรหัสคำสั่งขนาด 1 ไบต์ ค่า 0–14
+4. **MCP2515 (CAN)** บอร์ดควบคุมมอเตอร์และบอร์ดควบคุมแขนหุ่นยนต์ อ่านได้ CAN ID และรหัสคำสั่งขนาด 1 ไบต์ ค่า 0–14
 
 ทั้งนี้ บอร์ดมอเตอร์รุ่นก่อน (`motor_controller_mega`) มี encoder ของล้อและ IR sensor และ backend ยังรองรับข้อมูลเหล่านี้
 จากรูปแบบ `MC1` แต่บอร์ดรุ่นปัจจุบัน (`MS1`) ไม่ได้ติดตั้งเซนเซอร์ดังกล่าว ค่าที่เกี่ยวข้องจึงเป็น 0 เสมอ
@@ -489,11 +483,11 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 ### 2.5.3 ค่าที่คำนวณต่อ
 
-1. **แรงดันแบตเตอรี่** Arduino Mega เฉลี่ยค่า ADC 8 ค่าล่าสุด (moving average ประมาณ 0.8 s) แล้วแปลงเป็น `battery_mV`
+1. **แรงดันแบตเตอรี่** บอร์ดควบคุมมอเตอร์เฉลี่ยค่า ADC 8 ค่าล่าสุด (moving average ประมาณ 0.8 s) แล้วแปลงเป็น `battery_mV`
    จากนั้น backend แปลงเป็น `battery_volts` โดยหารด้วย 1,000 และปัดเศษ 3 ตำแหน่ง
-2. **รหัสทิศทาง 0–10** บอร์ด can-sender แปลงค่าแกนอนาล็อกหลังผ่าน deadzone เป็น −1, 0 หรือ +1 ต่อแกน
+2. **รหัสทิศทาง 0–10** บอร์ดรับค่าจากรีโมต แปลงค่าแกนอนาล็อกหลังผ่าน deadzone เป็น −1, 0 หรือ +1 ต่อแกน
    แล้วรวมกับสถานะปุ่ม D-pad
-3. **`motor_alive`, `arm_alive` และ `age_ms`** Arduino Mega ระบุว่ามีแหล่งคำสั่งที่ยังไม่หมดอายุหรือไม่
+3. **`motor_alive`, `arm_alive` และ `age_ms`** บอร์ดควบคุมมอเตอร์ระบุว่ามีแหล่งคำสั่งที่ยังไม่หมดอายุหรือไม่
    และคำสั่งที่กำลังขับล้อมีอายุเท่าใด
 4. **`canopy_ratio` และ `canopy_detected`** `vision.py` นับ pixel สีเขียวหลังผ่าน morphology แล้วหารด้วยจำนวน pixel ทั้งหมด
    และถือว่าพบทรงพุ่มเมื่อ `canopy_ratio` มากกว่าหรือเท่ากับ `CANOPY_READY_RATIO`
@@ -502,7 +496,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 ### 2.5.4 ฟิลด์ใน telemetry `MS1`
 
-ข้อมูล telemetry ที่ Arduino Mega ส่งไปยัง Raspberry Pi มีฟิลด์ดังตารางที่ 2.6
+ข้อมูล telemetry ที่บอร์ดควบคุมมอเตอร์ส่งไปยัง Raspberry Pi มีฟิลด์ดังตารางที่ 2.6
 
 **ตารางที่ 2.6** ฟิลด์ข้อมูลใน telemetry `MS1`
 
@@ -554,7 +548,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 ### 2.6.2 โครงสร้างข้อมูลและฟิลด์สำคัญ
 
-**`ControlSnapshot`** บน Arduino Mega (`motor_controller_simplify.ino`) เป็นสำเนาสถานะที่ task `CONTROL` เขียน
+**`ControlSnapshot`** บนบอร์ดควบคุมมอเตอร์ (`motor_controller_simplify.ino`) เป็นสำเนาสถานะที่ task `CONTROL` เขียน
 และ task `TELEMETRY` อ่าน ประกอบด้วยฟิลด์ดังนี้
 
 - `motor` และ `arm` (`int8_t`) คำสั่งล้อและคำสั่งแขนที่ใช้งานอยู่ (−1 หมายถึงไม่มีคำสั่ง)
@@ -577,11 +571,11 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 **ข้อมูลบนไมโครคอนโทรลเลอร์**
 
-1. `ControlState` (Arduino Mega) ใช้ตัดสินว่าจะขับล้อตามแหล่งคำสั่งใดและใช้ตรวจสอบ timeout
+1. `ControlState` (บอร์ดควบคุมมอเตอร์) ใช้ตัดสินว่าจะขับล้อตามแหล่งคำสั่งใดและใช้ตรวจสอบ timeout
    โดย task `CONTROL` เป็นผู้เขียนและผู้อ่านเพียงผู้เดียว
-2. `ControlSnapshot` (Arduino Mega) ใช้ส่ง telemetry โดย `CONTROL` เขียนสถานะคำสั่ง
+2. `ControlSnapshot` (บอร์ดควบคุมมอเตอร์) ใช้ส่ง telemetry โดย `CONTROL` เขียนสถานะคำสั่ง
    และ `TELEMETRY` เขียนค่าแบตเตอรี่และเป็นผู้อ่าน
-3. ตำแหน่งเซอร์โว (arm_controller) ใช้ขยับหัวฉีดทีละขั้นจากตำแหน่งเดิมภายใน `loop()`
+3. ตำแหน่งเซอร์โว (บอร์ดควบคุมแขนหุ่นยนต์) ใช้ขยับหัวฉีดทีละขั้นจากตำแหน่งเดิมภายใน `loop()`
    และเมื่อบอร์ดรีเซ็ตจะกลับสู่ตำแหน่งปลอดภัย
 
 **ข้อมูลบน Raspberry Pi**
@@ -631,8 +625,8 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 
 **อายุของข้อมูล**
 
-1. คำสั่งจาก serial บน Arduino Mega หมดอายุใน 1 s หากไม่ได้รับซ้ำ ส่วนคำสั่งจาก CAN หมดอายุใน 300 ms (Arduino Mega)
-   และ 1 s (arm_controller)
+1. คำสั่งจาก serial บนบอร์ดควบคุมมอเตอร์หมดอายุใน 1 s หากไม่ได้รับซ้ำ ส่วนคำสั่งจาก CAN หมดอายุใน 300 ms (บอร์ดควบคุมมอเตอร์)
+   และ 1 s (บอร์ดควบคุมแขนหุ่นยนต์)
 2. ข้อมูล telemetry ล่าสุดบน backend ถูกเขียนทับทุก frame (ประมาณ 100 ms) และหากมีอายุเกิน 1.5 s จะถือว่า `disconnected`
    ส่วนภาพ JPEG ล่าสุดถูกเขียนทับทุกเฟรม (1/15 s)
 3. queue ของ WebSocket client มีขนาด 1 ช่อง เมื่อเต็มจะทิ้ง frame เก่า client ที่ช้าจึงไม่ส่งผลต่อ client อื่น
@@ -645,7 +639,7 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 ## 3.1 ภาษา เครื่องมือ และสภาพแวดล้อมที่ใช้พัฒนา
 
 1. **เฟิร์มแวร์** พัฒนาด้วยภาษา C/C++ บน Arduino core ร่วมกับ avr-libc ผ่าน Arduino IDE 2.x
-   และทำงานบน Arduino Uno R3 จำนวน 3 บอร์ด และ Arduino Mega 2560 จำนวน 1 บอร์ด
+   และทำงานบน Arduino Uno R3 จำนวน 2 บอร์ด และ Arduino Mega 2560 จำนวน 1 บอร์ด
 2. **Backend** พัฒนาด้วยภาษา Python 3.12 จัดการแพ็กเกจด้วย Poetry ทดสอบด้วย pytest
    และทำงานใน Docker container (`python:3.12-slim-bookworm`) บน Raspberry Pi 5
 3. **Frontend** พัฒนาด้วย TypeScript และ Svelte 5 ใช้ pnpm, Vite, ESLint และ Prettier
@@ -660,13 +654,15 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 
 ## 3.2 โครงสร้างซอฟต์แวร์และ codebase
 
-ฝั่งเฟิร์มแวร์ประกอบด้วย 4 บอร์ด ดังนี้
+ฝั่งเฟิร์มแวร์ประกอบด้วย 3 บอร์ด ดังนี้
 
-1. `can-sender` (Arduino Uno) อ่านจอยสติ๊ก PS2 แปลงเป็นรหัสคำสั่ง และส่ง CAN heartbeat ทุก 50 ms
-2. `arm_controller` (Arduino Uno) รับข้อความ CAN ID `0x101` ขยับเซอร์โว 3 แกนผ่าน PCA9685 และเปิดปิด relay ของปั๊ม
-3. `motor_controller_simplify` (Arduino Mega 2560) ทำงานด้วย FreeRTOS 4 task ได้แก่ รับข้อความ CAN และคำสั่งจาก serial
-   ขับล้อ 4 ล้อ วัดแรงดันแบตเตอรี่ ส่ง telemetry `MS1` และส่งต่อคำสั่งแขนจากหน้าเว็บเข้า CAN Bus
-4. `can_receiver` (Arduino Uno) แปลงสัญญาณระหว่าง USB กับ CAN และควบคุมแขนกับปั๊มได้เอง ใช้แทน Arduino Mega ในรูปแบบ B
+1. **บอร์ดรับค่าจากรีโมต** (Arduino Uno, `firmware/can-sender/`) อ่านจอยสติ๊ก PS2 แปลงเป็นรหัสคำสั่ง
+   และส่ง CAN heartbeat ทุก 50 ms
+2. **บอร์ดควบคุมแขนหุ่นยนต์** (Arduino Uno, `firmware/arm_controller/`) รับข้อความ CAN ID `0x101` ขยับเซอร์โว 3 แกนผ่าน PCA9685
+   ด้วยสัญญาณ PWM และเปิดปิด relay ของปั๊ม
+3. **บอร์ดควบคุมมอเตอร์** (Arduino Mega 2560, `firmware/motor_controller_simplify/`) ทำงานด้วย FreeRTOS 4 task ได้แก่
+   รับข้อความ CAN และคำสั่งจาก Raspberry Pi ผ่าน serial ขับล้อ 4 ล้อ วัดแรงดันแบตเตอรี่ ส่ง telemetry `MS1`
+   และส่งต่อคำสั่งแขนจากหน้าเว็บเข้า CAN Bus
 
 ฝั่ง Raspberry Pi แบ่งเป็น `receiver_canbus.py` ซึ่งอ่านข้อมูลจาก serial ใน thread แยก ตรวจสอบ checksum
 เก็บข้อมูลล่าสุด และเขียนคำสั่งลง serial, `camera_service.py` และ `vision.py` ซึ่งอ่านภาพจากกล้อง ตรวจจับทรงพุ่ม
@@ -679,12 +675,11 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 ```text
 rescue-robot/
 ├── firmware/
-│   ├── can-sender/                  Uno: อ่านจอย PS2 → CAN 0x100 / 0x101
-│   ├── arm_controller/              Uno: เซอร์โว 3 แกน (PCA9685) + relay ปั๊ม
-│   ├── motor_controller_simplify/   Mega 2560 + FreeRTOS: ล้อ 4 ล้อ, แบต, Serial ↔ Pi
-│   ├── can_receiver/                Uno: USB ↔ CAN bridge (โหมด B)
+│   ├── can-sender/                  บอร์ดรับค่าจากรีโมต (Uno): จอย PS2 → CAN 0x100 / 0x101
+│   ├── arm_controller/              บอร์ดควบคุมแขน (Uno): เซอร์โว 3 แกน + ปั๊ม
+│   ├── motor_controller_simplify/   บอร์ดควบคุมมอเตอร์ (Mega): ล้อ, แบต, Serial ↔ Pi
 │   ├── can_bus_debug/               เครื่องมือดูข้อความบน CAN
-│   └── Robot_main/, motor_controller*/, receiver-canbus/, flame_telemetry/   รุ่นก่อน/ทดลอง ไม่ได้ใช้ในระบบหลัก
+│   └── can_receiver/, Robot_main/, motor_controller*/, receiver-canbus/, flame_telemetry/   รุ่นก่อน/ทดลอง ไม่ได้ใช้ในระบบหลัก
 ├── backend/
 │   ├── apiapp/infrastructure/       receiver_canbus.py (protocol serial), camera_service.py, vision.py, telemetry_hub.py
 │   ├── apiapp/modules/              robot/, camera/, telemetry/, health/  (router → use_case → schemas)
@@ -709,24 +704,24 @@ rescue-robot/
 
 ### 3.3.1 จุดเชื่อมต่อระหว่างส่วนประกอบ
 
-1. **จอยสติ๊ก PS2 กับ can-sender** ใช้สัญญาณไร้สาย 2.4 GHz เข้าตัวรับสัญญาณที่อ่านด้วย software SPI (`PS2_Controller.cpp`)
-2. **can-sender กับ Arduino Mega และ arm_controller** รวมถึง **Arduino Mega กับ arm_controller** ใช้ CAN Bus 500 kbps
+1. **จอยสติ๊ก PS2 กับบอร์ดรับค่าจากรีโมต** ใช้สัญญาณไร้สาย 2.4 GHz เข้าตัวรับสัญญาณที่อ่านด้วย software SPI (`PS2_Controller.cpp`)
+2. **บอร์ดรับค่าจากรีโมต กับบอร์ดควบคุมมอเตอร์และบอร์ดควบคุมแขนหุ่นยนต์** รวมถึง **บอร์ดควบคุมมอเตอร์กับบอร์ดควบคุมแขนหุ่นยนต์** ใช้ CAN Bus 500 kbps
    CAN ID `0x100` และ `0x101` ข้อมูลขนาด 1 ไบต์
-3. **Raspberry Pi กับ Arduino Mega** ใช้ USB serial 115200 8N1 โดยส่งคำสั่ง `CMD:...` ลงไป และรับ `MS1,...*CK`
+3. **Raspberry Pi กับบอร์ดควบคุมมอเตอร์** ใช้ USB serial 115200 8N1 โดยส่งคำสั่ง `CMD:...` ลงไป และรับ `MS1,...*CK`
    กับข้อความตอบรับ (ACK) แบบ JSON กลับมา (`receiver_canbus.py` และ `motor_controller_simplify.ino`)
-4. **Arduino Mega กับ L298N** ใช้ GPIO ที่ขา IN1–IN4 และ PWM ที่ขา ENA/ENB (`applyCommand()` และ `setMotor()`)
-5. **arm_controller กับ PCA9685** ใช้ I2C (`PCA9685_Control.cpp`)
+4. **บอร์ดควบคุมมอเตอร์กับ L298N** ใช้ GPIO ที่ขา IN1–IN4 และ PWM ที่ขา ENA/ENB (`applyCommand()` และ `setMotor()`)
+5. **บอร์ดควบคุมแขนหุ่นยนต์ กับ PCA9685** ใช้ I2C (`PCA9685_Control.cpp`)
 6. **หน้าเว็บกับ backend** ใช้ HTTP และ WebSocket ผ่าน nginx ในรูปแบบ JSON (`robot/api.ts` และ `robot/router.py`)
 7. **กล้อง backend และหน้าเว็บ** รับภาพผ่าน USB UVC (V4L2) และส่งออกเป็น HTTP MJPEG (`camera_service.py`)
 
 ### 3.3.2 ลำดับการพัฒนา
 
 1. เริ่มจากเฟิร์มแวร์บอร์ดเดียว (`Robot_main`) ที่อ่านจอยสติ๊กและควบคุมทุกอุปกรณ์ จากนั้นแยกเป็นหลายบอร์ด
-   ที่สื่อสารกันบน CAN Bus (`can-sender`, `arm_controller` และบอร์ดมอเตอร์) เพื่อลดจำนวนสายไฟและแบ่งหน้าที่ของแต่ละบอร์ดให้ชัดเจน
+   ที่สื่อสารกันบน CAN Bus (บอร์ดรับค่าจากรีโมต, บอร์ดควบคุมแขนหุ่นยนต์ และบอร์ดมอเตอร์) เพื่อลดจำนวนสายไฟและแบ่งหน้าที่ของแต่ละบอร์ดให้ชัดเจน
 2. บอร์ดมอเตอร์พัฒนาจากแบบ super loop ร่วมกับ encoder (`motor_controller_mega`) ไปเป็นการทดลองใช้ FreeRTOS
-   (`motor_controller_rtos`) และพัฒนาเป็นรุ่นปัจจุบัน `motor_controller_simplify` ซึ่งใช้ FreeRTOS 4 task
+   (`motor_controller_rtos`) และพัฒนาเป็นรุ่นปัจจุบัน บอร์ดควบคุมมอเตอร์ ซึ่งใช้ FreeRTOS 4 task
    พร้อมวัดแรงดันแบตเตอรี่และรับคำสั่งจาก serial
-3. โปรโตคอล serial พัฒนาจาก `RB1`–`RB4` (can_receiver) เป็น `MC1` (Arduino Mega รุ่นก่อน) และ `MS1` (รุ่นปัจจุบัน)
+3. โปรโตคอล serial พัฒนาจากรูปแบบ `RB1`–`RB4` และ `MC1` ของบอร์ดรุ่นก่อน เป็น `MS1` ในรุ่นปัจจุบัน
    โดย backend รองรับทุกรูปแบบด้วยการแยกตาม prefix
 4. Backend พัฒนาจากการใช้ข้อมูลจำลอง ไปเป็นการอ่าน serial จริง เพิ่ม API สั่งงาน เพิ่มการส่งภาพจากกล้อง
    และเพิ่มการตรวจจับทรงพุ่มในลำดับสุดท้าย
@@ -735,7 +730,7 @@ rescue-robot/
 
 [ปรับลำดับการพัฒนาให้ตรงกับที่คณะผู้จัดทำดำเนินการจริง]
 
-## 3.4 บอร์ด can-sender (Arduino Uno และจอยสติ๊ก PS2): SPI และ CAN Bus
+## 3.4 บอร์ดรับค่าจากรีโมต (Arduino Uno และจอยสติ๊ก PS2): SPI และ CAN Bus
 
 โค้ดของบอร์ดนี้อยู่ในไดเรกทอรี `firmware/can-sender/`
 
@@ -823,7 +818,7 @@ if (currentTime - lastSendTime >= CAN_SEND_INTERVAL)   // 50 ms
 หากหยุดส่ง ฝั่งผู้รับจะเกิด timeout และหยุดการทำงานเอง นอกจากนี้โปรแกรมใช้ `millis()` แทน `delay()`
 เพื่อให้งานหลายอย่างทำงานร่วมกันได้แบบ non-blocking
 
-## 3.5 บอร์ด arm_controller (Arduino Uno, PCA9685 และปั๊ม): GPIO, Interrupt, Watchdog, I2C และ PWM
+## 3.5 บอร์ดควบคุมแขนหุ่นยนต์ (Arduino Uno, PCA9685 และปั๊ม): GPIO, Interrupt, Watchdog, I2C และ PWM
 
 โค้ดของบอร์ดนี้อยู่ในไดเรกทอรี `firmware/arm_controller/`
 
@@ -861,7 +856,7 @@ WDT มี 3 โหมด ได้แก่ Interrupt (`WDIE`), System Reset (`
   เนื่องจากลูปรอ `CAN0.begin()` มี `delay(1000)` หากเปิด WDT ก่อน บอร์ดจะถูกรีเซ็ตซ้ำไม่สิ้นสุด
 - เรียก `wdt_reset()` ทุกรอบของ `loop()` หาก `loop()` ค้างเกิน 500 ms ไมโครคอนโทรลเลอร์จะรีเซ็ต
   และ `setup()` จะปิด relay ของปั๊มและสั่งเซอร์โวกลับสู่ตำแหน่งปลอดภัย
-- บอร์ด Arduino Mega (`motor_controller_simplify`) ใช้ WDT ไม่ได้ เนื่องจาก FreeRTOS ใช้ WDT เป็นตัวสร้าง tick
+- บอร์ดควบคุมมอเตอร์ (Arduino Mega) ใช้ WDT ไม่ได้ เนื่องจาก FreeRTOS ใช้ WDT เป็นตัวสร้าง tick
 
 #### Sleep Mode และการจัดการพลังงาน
 
@@ -1007,92 +1002,12 @@ if (!sleepMode && (currentTime - lastActiveTime > SLEEP_TIMEOUT))
 หัวฉีดจึงหมุนอย่างช้าและนุ่มนวลโดยไม่กระชาก ทั้งนี้มีข้อจำกัดคือ เมื่อสัญญาณ CAN ขาดหาย โปรแกรมหยุดเฉพาะแขน
 แต่ยังไม่ปิดปั๊ม ปั๊มจะปิดเมื่อครบ 30 วินาทีของ software sleep (รายละเอียดในหัวข้อ 4.7)
 
-## 3.6 บอร์ด can_receiver (USB กับ CAN bridge): UART
-
-โค้ดของบอร์ดนี้อยู่ในไดเรกทอรี `firmware/can_receiver/`
-
-### 3.6.1 หลักการที่ใช้
-
-#### UART / USART
-
-USART เป็นการสื่อสารอนุกรมแบบ asynchronous ประกอบด้วย start bit, ข้อมูล 8 บิต, parity (ถ้ามี) และ stop bit
-โดยไม่มีสายสัญญาณนาฬิกา ทั้งสองฝั่งจึงต้องตั้งค่า baud rate ให้ตรงกัน baud rate คำนวณจาก `UBRRn = F_CPU / (16 × baud) − 1`
-(หรือหารด้วย 8 เมื่อเปิด U2X) สำหรับ 115200 baud ที่ 16 MHz ใช้โหมด U2X และ UBRR = 16 ซึ่งมีความคลาดเคลื่อนประมาณ 2.1%
-
-ในโครงงาน พอร์ต USB ของ Arduino ใช้ชิป ATmega16U2 แปลงสัญญาณ USB เป็น USART0 ของไมโครคอนโทรลเลอร์
-Raspberry Pi จึงมองเห็นเป็นอุปกรณ์ `/dev/ttyACM0` การสื่อสารใช้ 115200 8N1 ส่งข้อความเป็นบรรทัด ASCII
-ปิดท้ายด้วย `\n` พร้อม XOR checksum ตามโปรโตคอลที่ออกแบบในหัวข้อ 2.2.2
-
-### 3.6.2 การรับคำสั่งจาก UART แบบ line buffer
-
-```cpp
-void process_serial_commands()
-{
-    static char line[48];
-    static uint8_t length = 0;
-    while (Serial.available() > 0)
-    {
-        const char character = static_cast<char>(Serial.read());
-        if (character == '\n') { line[length] = '\0'; process_serial_command(line); length = 0; continue; }
-        if (character == '\r') continue;
-        if (length < sizeof(line) - 1) line[length++] = character;
-        else length = 0;   // บรรทัดยาวเกิน → ทิ้งทั้งบรรทัด ไม่รันคำสั่งที่ถูกตัด
-    }
-}
-```
-
-### 3.6.3 การตรวจสอบรูปแบบคำสั่งอย่างเข้มงวด
-
-```cpp
-bool parse_code(const char *line, const char *prefix, int minimum, int maximum, int *result)
-{
-    const size_t prefixLength = strlen(prefix);
-    if (strncmp(line, prefix, prefixLength) != 0 || line[prefixLength] == '\0') return false;
-    char *end = nullptr;
-    const long value = strtol(line + prefixLength, &end, 10);
-    if (*end != '\0' || value < minimum || value > maximum) return false;   // "CMD:MOTOR:1x" = ผิด
-    *result = static_cast<int>(value);
-    return true;
-}
-```
-
-### 3.6.4 ลำดับความสำคัญของแหล่งคำสั่ง (Serial override CAN)
-
-```cpp
-void refresh_active_commands()
-{
-    activeMotorCommand = serialMotorActive
-        ? serialMotorCommand
-        : (canMotorAlive ? canMotorCommand : -1);
-}
-```
-
-คำสั่งจากหน้าเว็บมีสิทธิ์เหนือจอยสติ๊กชั่วคราว เนื่องจากจอยสติ๊กส่ง STOP เป็น heartbeat ตลอดเวลา
-หากไม่ให้สิทธิ์แก่คำสั่งจาก serial หน้าเว็บจะสั่งงานไม่ได้ เมื่อคำสั่งหมดอายุใน 1 วินาที บอร์ดจะส่ง STOP เข้า CAN Bus
-แล้วคืนสิทธิ์ให้จอยสติ๊ก คำสั่ง E-STOP จากหน้าเว็บก็คงสถานะไว้ 1 วินาทีเช่นกัน
-เพื่อไม่ให้ heartbeat ของจอยสติ๊กเขียนทับคำสั่งหยุดฉุกเฉินในทันที
-
-### 3.6.5 Telemetry พร้อม XOR checksum
-
-```cpp
-uint8_t calculate_xor_checksum(const char *payload)
-{
-    uint8_t checksum = 0;
-    while (*payload != '\0') checksum ^= static_cast<uint8_t>(*payload++);
-    return checksum;
-}
-// ... snprintf(payload, ..., "RB4,%d,%d,...,%u", ...);
-Serial.print(payload); Serial.print('*');
-if (checksum < 0x10) Serial.print('0');
-Serial.println(checksum, HEX);
-```
-
-## 3.7 บอร์ด motor_controller_simplify (Arduino Mega 2560): FreeRTOS, PWM และ ADC
+## 3.6 บอร์ดควบคุมมอเตอร์ (Arduino Mega 2560): FreeRTOS, PWM และ ADC
 
 โค้ดของบอร์ดนี้อยู่ในไดเรกทอรี `firmware/motor_controller_simplify/` โครงสร้างของ task
 และเหตุผลที่เลือกใช้ FreeRTOS อธิบายไว้ในหัวข้อ 2.3.2
 
-### 3.7.1 หลักการที่ใช้
+### 3.6.1 หลักการที่ใช้
 
 #### RTOS
 
@@ -1105,8 +1020,18 @@ RTOS แบ่งงานออกเป็น task ที่มีลำดั
 - **Task notification** ใช้ปลุก task ที่ระบุโดยตรง และมีภาระน้อยที่สุด
 
 FreeRTOS บน AVR (ไลบรารี Arduino_FreeRTOS) ใช้ Watchdog Timer เป็นตัวสร้าง tick (ประมาณ 15 ms) และ `loop()` ทำหน้าที่เป็น
-idle task ในโครงงาน Arduino Mega แบ่งงานเป็น 4 task ได้แก่ `CAN_RX`, `CONTROL`, `SERIAL_RX` และ `TELEMETRY`
+idle task ในโครงงาน บอร์ดควบคุมมอเตอร์แบ่งงานเป็น 4 task ได้แก่ `CAN_RX`, `CONTROL`, `SERIAL_RX` และ `TELEMETRY`
 และใช้ครบทั้ง queue, semaphore จาก ISR, mutex 3 ตัว และ task notification
+
+#### UART / USART
+
+USART เป็นการสื่อสารอนุกรมแบบ asynchronous ประกอบด้วย start bit, ข้อมูล 8 บิต, parity (ถ้ามี) และ stop bit
+โดยไม่มีสายสัญญาณนาฬิกา ทั้งสองฝั่งจึงต้องตั้งค่า baud rate ให้ตรงกัน baud rate คำนวณจาก `UBRRn = F_CPU / (16 × baud) − 1`
+(หรือหารด้วย 8 เมื่อเปิด U2X) สำหรับ 115200 baud ที่ 16 MHz ใช้โหมด U2X และ UBRR = 16 ซึ่งมีความคลาดเคลื่อนประมาณ 2.1%
+
+ในโครงงาน พอร์ต USB ของบอร์ดควบคุมมอเตอร์ (Arduino Mega) ใช้ชิป ATmega16U2 แปลงสัญญาณ USB เป็น USART0 ของไมโครคอนโทรลเลอร์
+Raspberry Pi จึงมองเห็นเป็นอุปกรณ์ `/dev/ttyACM0` การสื่อสารใช้ 115200 8N1 ส่งข้อความเป็นบรรทัด ASCII
+ปิดท้ายด้วย `\n` พร้อม XOR checksum ตามโปรโตคอลที่ออกแบบในหัวข้อ 2.2.2
 
 #### PWM บน Arduino Mega
 
@@ -1139,7 +1064,7 @@ L298N ใช้ทรานซิสเตอร์ BJT จึงมีแรง
 
 ข้อควรระวังในการต่อวงจร ได้แก่ ถอด jumper ที่ขา ENA/ENB ก่อนต่อสัญญาณ PWM, ต่อ GND ร่วมกับ Arduino Mega,
 เสียบ jumper 5V-EN ได้เมื่อ Vs ไม่เกิน 12 V และไม่ต่อขา 5V ของ L298N เข้ากับ Arduino Mega ขณะเชื่อมต่อ USB กับ Raspberry Pi
-ในโครงงานใช้ L298N 2 โมดูลขับล้อ Mecanum 4 ล้อ ตามการต่อขาในตารางที่ 2.3 และทิศทางการหมุนตามหัวข้อ 3.7.5
+ในโครงงานใช้ L298N 2 โมดูลขับล้อ Mecanum 4 ล้อ ตามการต่อขาในตารางที่ 2.3 และทิศทางการหมุนตามหัวข้อ 3.6.6
 
 #### ADC (Analog to Digital Converter)
 
@@ -1148,10 +1073,10 @@ ADC ของ AVR เป็นแบบ successive approximation ความล
 ซึ่งการแปลง 1 ครั้งใช้ประมาณ 13 clock หรือ 104 µs แรงดันคำนวณจาก `V = ADC × Vref / 1023` และวัดแบตเตอรี่ผ่านวงจรแบ่งแรงดัน
 ด้วย `Vbat = V × (R1 + R2) / R2`
 
-ในโครงงาน Arduino Mega อ่านโมดูลวัดแรงดันแบตเตอรี่ 0–25 V (30 kΩ / 7.5 kΩ) ที่ขา `A0` โดยเขียนโปรแกรมระดับ register
+ในโครงงาน บอร์ดควบคุมมอเตอร์อ่านโมดูลวัดแรงดันแบตเตอรี่ 0–25 V (30 kΩ / 7.5 kΩ) ที่ขา `A0` โดยเขียนโปรแกรมระดับ register
 แทน `analogRead()` แล้วเฉลี่ย 8 ค่า (moving average) เพื่อลดสัญญาณรบกวนจากมอเตอร์ และส่งค่าขึ้นหน้าเว็บใน telemetry `MS1`
 
-### 3.7.2 การสร้าง RTOS objects และ task
+### 3.6.2 การสร้าง RTOS objects และ task
 
 ```cpp
 commandQueue   = xQueueCreate(COMMAND_QUEUE_LENGTH, sizeof(CommandEvent));
@@ -1170,7 +1095,7 @@ xTaskCreate(taskTelemetry,     "TELEMETRY", TELEMETRY_TASK_STACK, nullptr, 1, &t
 // scheduler เริ่มหลัง setup() จบ และ loop() กลายเป็น idle task
 ```
 
-### 3.7.3 Interrupt, Semaphore และ Task CAN_RX
+### 3.6.3 Interrupt, Semaphore และ Task CAN_RX
 
 ```cpp
 void onCanInterrupt() {
@@ -1199,7 +1124,63 @@ void taskCanReceive(void *) {
 MCP2515 มี RX buffer เพียง 2 ช่อง แต่จอยสติ๊กส่ง 2 ข้อความ (`0x100` และ `0x101`) ติดกันทุก 50 ms
 จึงกำหนดให้ `CAN_RX` มี priority สูงสุดและอ่านข้อความจนหมด buffer ทุกครั้ง มิฉะนั้นข้อความจะถูกเขียนทับ
 
-### 3.7.4 Task CONTROL: การรับจาก Queue การเลือกแหล่งคำสั่ง และ Fail-safe
+### 3.6.4 Task SERIAL_RX: การรับและตรวจสอบคำสั่งจาก serial
+
+Task `SERIAL_RX` รับคำสั่งจาก Raspberry Pi ทีละบรรทัด ตรวจสอบรูปแบบอย่างเข้มงวด แล้วส่งคำสั่งเข้า `commandQueue`
+และตอบกลับด้วยข้อความ ACK หรือ ERR
+
+```cpp
+bool parseCode(const char *line, const char *prefix, long *result) {
+  const size_t prefixLength = strlen(prefix);
+  if (strncmp(line, prefix, prefixLength) != 0 || line[prefixLength] == '\0') return false;
+  char *end = nullptr;
+  *result = strtol(line + prefixLength, &end, 10);
+  return *end == '\0';                      // "CMD:MOTOR:1x" = ผิดรูปแบบ
+}
+
+void processSerialCommand(const char *line) {
+  // ... PING และ STOP / CMD:ALL:0
+  long code = 0;
+  if (parseCode(line, "CMD:MOTOR:", &code) && validMotorCommand(code)) {
+    queueSerialCommand(CH_MOTOR, (int8_t)code, F("MOTOR"));   // ส่งเข้า commandQueue แล้วตอบ ACK
+    return;
+  }
+  if (parseCode(line, "CMD:ARM:", &code) && validArmCommand(code)) {
+    queueSerialCommand(CH_ARM, (int8_t)code, F("ARM"));
+    return;
+  }
+  serialError(F("UNKNOWN_OR_INVALID_COMMAND"));
+}
+
+void taskSerialReceive(void *) {
+  char line[48];
+  uint8_t length = 0;
+  for (;;) {
+    while (Serial.available() > 0) {
+      const char c = (char)Serial.read();
+      if (c == '\n') {
+        line[length] = '\0';
+        processSerialCommand(line);
+        length = 0;
+      } else if (c == '\r') {
+        continue;
+      } else if (length < sizeof(line) - 1) {
+        line[length++] = c;
+      } else {
+        length = 0;                          // บรรทัดยาวเกิน ทิ้งทั้งบรรทัด ไม่รันคำสั่งที่ถูกตัด
+      }
+    }
+    vTaskDelay(1);
+  }
+}
+```
+
+โปรแกรมเก็บอักขระลงบัฟเฟอร์จนพบ `\n` จึงประมวลผลทั้งบรรทัด หากบรรทัดยาวเกินบัฟเฟอร์จะทิ้งทั้งบรรทัด
+เพื่อไม่ให้คำสั่งที่ถูกตัดทำงานผิดพลาด และ `parseCode()` ยอมรับเฉพาะตัวเลขที่ตามหลัง prefix พอดี
+ร่วมกับการตรวจช่วงด้วย `validMotorCommand()` และ `validArmCommand()` ส่วนการเลือกระหว่างคำสั่งจาก serial
+กับคำสั่งจากจอยสติ๊กทำใน task `CONTROL` (หัวข้อ 3.6.5)
+
+### 3.6.5 Task CONTROL: การรับจาก Queue การเลือกแหล่งคำสั่ง และ Fail-safe
 
 ```cpp
 void taskControl(void *) {
@@ -1237,7 +1218,7 @@ int8_t activeMotor(const ControlState &s) {
 และแบบ periodic คือทำงานทุก 20 ms เพื่อตรวจสอบ timeout แม้ไม่มีคำสั่งเข้ามา สำหรับคำสั่ง E-STOP จากหน้าเว็บ (`CMD:ALL:0`)
 บอร์ดจะคงสถานะ STOP ไว้ 1 วินาที และส่ง `PUMP_OFF` เข้า CAN Bus เนื่องจากคำสั่ง STOP เพียงอย่างเดียวไม่ปิด relay ของปั๊ม
 
-### 3.7.5 ตารางทิศทางมอเตอร์ (Lookup Table) และ PWM
+### 3.6.6 ตารางทิศทางมอเตอร์ (Lookup Table) และ PWM
 
 ```cpp
 void applyCommand(uint8_t command) {
@@ -1255,7 +1236,7 @@ void applyCommand(uint8_t command) {
 }
 ```
 
-### 3.7.6 การอ่านแรงดันแบตเตอรี่ด้วย ADC ระดับ register และ Moving Average
+### 3.6.7 การอ่านแรงดันแบตเตอรี่ด้วย ADC ระดับ register และ Moving Average
 
 ไฟล์ `battery_sensor.cpp` พัฒนาต่อจาก `firmware/motor_controller_mega/battery_sensor.cpp` โดยคงรูปแบบ API
 `battery_init()` และ `battery_read()` ที่คืนค่าเป็น `BatterySample` และใช้ค่าตัวแบ่งแรงดัน 30k/7.5k, Vref 5 V และตัวหาร 1023
@@ -1288,7 +1269,7 @@ BatterySample battery_read() {
 ตัวอย่างการคำนวณ เมื่อ ADC = 493 จะได้ 493 × 5 / 1023 = 2.410 V ที่ขา A0 และเมื่อคูณด้วย (30k + 7.5k) / 7.5k
 จะได้แรงดันแบตเตอรี่ 12.05 V
 
-### 3.7.7 Task TELEMETRY: Task Notification และ MS1
+### 3.6.8 Task TELEMETRY: Task Notification และ MS1
 
 ```cpp
 void taskTelemetry(void *) {
@@ -1320,7 +1301,7 @@ void taskTelemetry(void *) {
 //          = เดินหน้า, แบต 12.05 V, PWM 150, คำสั่งอายุ 24 ms, ไม่มีคำสั่งแขน
 ```
 
-### 3.7.8 การเปรียบเทียบ Super Loop กับ RTOS
+### 3.6.9 การเปรียบเทียบ Super Loop กับ RTOS
 
 การเปลี่ยนโครงสร้างโปรแกรมของบอร์ดมอเตอร์จาก super loop เป็น FreeRTOS มีความแตกต่างดังตารางที่ 3.2
 
@@ -1335,9 +1316,9 @@ void taskTelemetry(void *) {
 | ตอบสนอง interrupt       | ISR ตั้ง flag แล้วรอให้ loop วนกลับมาตรวจสอบ | ISR ปลุก task ด้วย semaphore                                                |
 | ต้นทุน                   | ใช้ RAM น้อย                                                      | ใช้ RAM ~1.3 KB สำหรับ stack + tick ~15 ms, ใช้ WDT reset ไม่ได้  |
 
-## 3.8 เว็บและเซิร์ฟเวอร์บน Raspberry Pi: การรับ telemetry การส่งคำสั่ง การส่งภาพ และการตรวจจับทรงพุ่ม
+## 3.7 เว็บและเซิร์ฟเวอร์บน Raspberry Pi: การรับ telemetry การส่งคำสั่ง การส่งภาพ และการตรวจจับทรงพุ่ม
 
-### 3.8.1 การถอดรหัส telemetry และตรวจสอบ checksum
+### 3.7.1 การถอดรหัส telemetry และตรวจสอบ checksum
 
 ฟังก์ชัน `parse_line()` ในไฟล์ `backend/apiapp/infrastructure/receiver_canbus.py` ตรวจสอบ prefix และ checksum
 ของแต่ละบรรทัดก่อนแยกฟิลด์
@@ -1362,7 +1343,7 @@ def parse_line(raw: bytes) -> ReceiverSample | None:
     ...
 ```
 
-### 3.8.2 Thread อ่าน serial และการเชื่อมต่อใหม่อัตโนมัติ
+### 3.7.2 Thread อ่าน serial และการเชื่อมต่อใหม่อัตโนมัติ
 
 ```python
 while not self._stop.is_set():
@@ -1383,7 +1364,7 @@ while not self._stop.is_set():
 การเปิดพอร์ต serial ทำให้ขา DTR ของ USB-serial สั่งให้ Arduino รีเซ็ต จึงต้องรอให้บอร์ดเริ่มทำงานก่อนอ่านข้อมูล
 และแยกการอ่าน serial ซึ่งเป็น blocking I/O ไว้ใน thread แยก เพื่อไม่ให้ขัดขวาง event loop ของ FastAPI
 
-### 3.8.3 การส่งคำสั่งลง serial
+### 3.7.3 การส่งคำสั่งลง serial
 
 ```python
 def send_command(self, channel: str, code: int) -> bool:
@@ -1401,7 +1382,7 @@ def send_command(self, channel: str, code: int) -> bool:
 ก่อนส่งคำสั่ง `modules/robot/use_case.py` ตรวจสอบช่วงของรหัสคำสั่ง (motor 0–8, arm 0–8 และ 11–14, all เท่ากับ 0 เท่านั้น)
 และตอบกลับด้วย HTTP 422 หากรหัสไม่ถูกต้อง
 
-### 3.8.4 OpenCV: การจับภาพจากกล้องและการส่งภาพ
+### 3.7.4 OpenCV: การจับภาพจากกล้องและการส่งภาพ
 
 โค้ดส่วนนี้อยู่ในไฟล์ `backend/apiapp/infrastructure/camera_service.py`
 
@@ -1433,7 +1414,7 @@ async def mjpeg_stream(self):
 
 หน้าเว็บแสดงภาพด้วย `<img src="/v1/camera/stream">` ในรูปแบบ multipart MJPEG จึงไม่ต้องใช้ JavaScript ถอดรหัสวิดีโอ
 
-### 3.8.5 การตรวจจับทรงพุ่มทุเรียน
+### 3.7.5 การตรวจจับทรงพุ่มทุเรียน
 
 โค้ดส่วนนี้อยู่ในไฟล์ `backend/apiapp/infrastructure/vision.py`
 
@@ -1471,7 +1452,7 @@ def annotate(self, frame, result) -> None:
 `CAMERA_VISION_ENABLED=False` และปรับเกณฑ์ได้ด้วย `CANOPY_READY_RATIO` โดยมี unit test บนภาพสังเคราะห์ใน
 `backend/tests/test_vision.py`
 
-### 3.8.6 หน้าเว็บ: การเรียก API และ E-STOP
+### 3.7.6 หน้าเว็บ: การเรียก API และ E-STOP
 
 ```ts
 // frontend/src/lib/features/robot/api.ts
@@ -1485,7 +1466,7 @@ async function emergencyStop() {
 }
 ```
 
-### 3.8.7 การกดค้างเพื่อสั่งงาน (hold-to-drive)
+### 3.7.7 การกดค้างเพื่อสั่งงาน (hold-to-drive)
 
 เฟิร์มแวร์ยกเลิกคำสั่งจาก serial หลัง 1 วินาทีหากไม่ได้รับซ้ำ ปุ่มบนหน้าเว็บ (`frontend/src/lib/features/robot/hold-command.ts`)
 จึงส่งคำสั่งซ้ำทุก 200 ms ขณะกดค้าง และส่ง STOP ทันทีเมื่อปล่อยปุ่ม
@@ -1516,31 +1497,31 @@ release() {                                   // pointerup / pointercancel / blu
 
 ส่วน telemetry รับผ่าน WebSocket `/v1/telemetry/ws` และเชื่อมต่อใหม่อัตโนมัติแบบ exponential backoff (`ws-source.ts`)
 
-## 3.9 เส้นทางข้อมูลแบบครบวงจรและตัวอย่างโค้ดสำคัญ
+## 3.8 เส้นทางข้อมูลแบบครบวงจรและตัวอย่างโค้ดสำคัญ
 
-### 3.9.1 การกดปุ่มเดินหน้าบนหน้าเว็บจนล้อหมุนและสถานะกลับขึ้นหน้าเว็บ
+### 3.8.1 การกดปุ่มเดินหน้าบนหน้าเว็บจนล้อหมุนและสถานะกลับขึ้นหน้าเว็บ
 
 1. ผู้ใช้กดปุ่มเดินหน้าค้างไว้ ฟังก์ชัน `start()` ใน `hold-command.ts` ส่ง `{channel:"motor", code:1}` ทันทีและซ้ำทุก 200 ms
 2. `robot/api.ts` ส่งคำขอ `POST /v1/robot/command` ผ่าน nginx ซึ่งส่งต่อ `/v1` ไปยัง FastAPI
 3. `modules/robot/use_case.py` ตรวจสอบช่วงของรหัสคำสั่ง หากไม่ถูกต้องจะตอบกลับด้วย HTTP 422
 4. `send_command()` ใน `receiver_canbus.py` เขียน `CMD:MOTOR:1\n` ลง `/dev/ttyACM0` (หาก serial ไม่พร้อมจะตอบกลับด้วย HTTP 503)
-5. Task `SERIAL_RX` บน Arduino Mega อ่านบรรทัด สร้าง `CommandEvent{FROM_SERIAL, CH_MOTOR, 1}` ส่งเข้า `commandQueue`
+5. Task `SERIAL_RX` บนบอร์ดควบคุมมอเตอร์อ่านบรรทัด สร้าง `CommandEvent{FROM_SERIAL, CH_MOTOR, 1}` ส่งเข้า `commandQueue`
    และตอบกลับด้วย ACK
 6. Task `CONTROL` ทำงานเมื่อมีข้อมูลใน queue เรียก `activeMotor()` ซึ่งเลือกคำสั่งจาก serial แล้วเรียก `applyCommand(1)`
    ซึ่งสั่ง `analogWrite` ไปยัง L298N ทำให้ล้อหมุน
 7. เมื่อสถานะเปลี่ยน `CONTROL` เรียก `xTaskNotifyGive` เพื่อปลุก `TELEMETRY` ให้ส่ง `MS1` ทันที
 8. Thread ของ backend อ่านบรรทัดด้วย `readline()` ตรวจสอบ checksum ด้วย `parse_line()` และเก็บเป็นข้อมูลล่าสุด
 9. หน้า `/control` ขอ `GET /v1/robot/status` ทุก 500 ms และแสดงสถานะ `FORWARD` พร้อมแรงดันแบตเตอรี่
-10. เมื่อผู้ใช้ปล่อยปุ่ม `release()` ส่ง code 0 ทันที หากเครือข่ายขาดจนส่งไม่ได้ Arduino Mega จะหยุดเองเมื่อคำสั่งหมดอายุ 1 s
+10. เมื่อผู้ใช้ปล่อยปุ่ม `release()` ส่ง code 0 ทันที หากเครือข่ายขาดจนส่งไม่ได้ บอร์ดควบคุมมอเตอร์จะหยุดเองเมื่อคำสั่งหมดอายุ 1 s
     (`checkTimeouts()`)
 
-### 3.9.2 การสั่งหัวฉีดจากหน้าเว็บไปยัง arm_controller
+### 3.8.2 การสั่งหัวฉีดจากหน้าเว็บไปยังบอร์ดควบคุมแขนหุ่นยนต์
 
-เมื่อหน้าเว็บส่งคำสั่ง `CMD:ARM:13` task `SERIAL_RX` ของ Arduino Mega จะรับคำสั่งและ `CONTROL` เก็บเป็นคำสั่งแขนจาก serial
-จากนั้น `serviceSerialArm()` ส่งข้อความ CAN ID `0x101` ข้อมูล `13` ทุก 50 ms เมื่อ MCP2515 ของ arm_controller ได้รับข้อความ
+เมื่อหน้าเว็บส่งคำสั่ง `CMD:ARM:13` task `SERIAL_RX` ของบอร์ดควบคุมมอเตอร์จะรับคำสั่งและ `CONTROL` เก็บเป็นคำสั่งแขนจาก serial
+จากนั้น `serviceSerialArm()` ส่งข้อความ CAN ID `0x101` ข้อมูล `13` ทุก 50 ms เมื่อ MCP2515 ของบอร์ดควบคุมแขนหุ่นยนต์ ได้รับข้อความ
 จะดึงขา INT ลง ISR `INT0_vect` ตั้งค่า `isDataReady` แล้ว `loop()` อ่านข้อความ CAN และยกหัวฉีดทีละ 2 tick ทุก 15 ms
 
-### 3.9.3 การส่งภาพจากกล้องไปยังหน้าเว็บ
+### 3.8.3 การส่งภาพจากกล้องไปยังหน้าเว็บ
 
 `_grabber_loop()` อ่านภาพจากกล้องด้วย `VideoCapture.read()` ใน thread แยกผ่าน `asyncio.to_thread` จากนั้นเรียก
 `vision.detect()` และ `annotate()` แล้วบีบอัดด้วย `cv2.imencode(".jpg")` และเก็บเป็นภาพ JPEG ล่าสุด
@@ -1568,7 +1549,7 @@ release() {                                   // pointerup / pointercancel / blu
 
 **สภาพแวดล้อมการทดสอบ**
 
-การทดสอบใช้ Raspberry Pi 5 RAM 8 GB, Arduino Mega 2560 และ Arduino Uno 2–3 บอร์ด แบตเตอรี่ [x] V
+การทดสอบใช้ Raspberry Pi 5 RAM 8 GB, Arduino Mega 2560 และ Arduino Uno 2 บอร์ด แบตเตอรี่ [x] V
 ซอฟต์แวร์ประกอบด้วย Raspberry Pi OS Bookworm 64-bit, Docker Compose และ backend Python 3.12
 ผู้ควบคุมใช้ [รุ่นโทรศัพท์มือถือหรือแท็บเล็ต และเบราว์เซอร์] และเครื่องมือวัดที่ใช้ ได้แก่ มัลติมิเตอร์ นาฬิกาจับเวลาหรือวิดีโอ
 slow-motion สคริปต์ `scripts/read_receiver_canbus.py` และเฟิร์มแวร์ `firmware/can_bus_debug`
@@ -1590,7 +1571,7 @@ slow-motion สคริปต์ `scripts/read_receiver_canbus.py` และเ
 | T05      | Serial timeout                 | ถอด USB ขณะสั่งจากเว็บ                                           | หยุดใน 1 s                                                                                |
 | T06      | กดค้างบนเว็บ       | กดปุ่ม ↑ ค้าง 5 s แล้วปล่อย                                   | เดินต่อเนื่อง หยุดทันทีที่ปล่อย                                   |
 | T07      | E-STOP                         | กด E-STOP ขณะเดินและปั๊มเปิด                                  | ล้อหยุดและปั๊มปิดทันที                                                    |
-| T08      | Watchdog                       | ใส่`while(1);` ทดสอบใน arm_controller                                 | บอร์ด reset ใน 0.5 s, ปั๊มปิด, เซอร์โวกลับตำแหน่งปลอดภัย |
+| T08      | Watchdog                       | ใส่`while(1);` ทดสอบในบอร์ดควบคุมแขนหุ่นยนต์                                 | บอร์ด reset ใน 0.5 s, ปั๊มปิด, เซอร์โวกลับตำแหน่งปลอดภัย |
 | T09      | Software sleep                 | ปล่อยจอยสติ๊ก 30 s                                                   | ปั๊มปิด แขนหยุด, ขยับจอยสติ๊กแล้วกลับมาทำงาน           |
 | T10      | ค่าแบตเตอรี่       | เทียบกับมัลติมิเตอร์                                          | คลาดเคลื่อน ≤`[x]` % หลังปรับเทียบ                                   |
 | T11      | OpenCV                         | หันกล้องเข้าพุ่มไม้ / พื้นดิน                           | ขึ้น`CANOPY xx% READY` / ไม่ขึ้น READY                                             |
@@ -1663,7 +1644,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 
 ข้อจำกัดของระบบที่ทราบก่อนการทดสอบมีดังนี้
 
-1. เมื่อสัญญาณ CAN ขาดหาย arm_controller หยุดแขนแต่ไม่ปิดปั๊มทันที ปั๊มจะปิดเมื่อครบ 30 s
+1. เมื่อสัญญาณ CAN ขาดหาย บอร์ดควบคุมแขนหุ่นยนต์ หยุดแขนแต่ไม่ปิดปั๊มทันที ปั๊มจะปิดเมื่อครบ 30 s
 2. หากเปิดจอยสติ๊กไว้ขณะสั่งแขนจากหน้าเว็บ คำสั่งแขนจากทั้งสองแหล่งจะสลับกันบน CAN ID `0x101`
 3. การตรวจจับทรงพุ่มนับทุกพื้นที่ที่เป็นสีเขียว รวมถึงหญ้า
 4. ความเร็วล้อคงที่ (`MOTOR_PWM = 150`) และยังไม่มี encoder สำหรับควบคุมความเร็ว
@@ -1751,7 +1732,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 วิธีแก้ไขและเหตุผล: ใช้ XOR checksum ร่วมกับ prefix และ `seq` แล้วทิ้ง frame ที่เสีย เนื่องจากทำได้ง่าย ใช้หน่วยความจำน้อยเหมาะกับ Arduino Uno
 และ frame ถัดไปจะมาถึงภายใน 100 ms อยู่แล้ว
 
-**P4 backend ไม่ได้รับ telemetry จาก Arduino Mega**
+**P4 backend ไม่ได้รับ telemetry จากบอร์ดควบคุมมอเตอร์**
 
 สาเหตุและผลกระทบ: เฟิร์มแวร์รุ่นแรกส่งข้อมูลรูปแบบ `MC1,...,<CK>` จำนวน 7 ฟิลด์ โดยไม่มีเครื่องหมาย `*` แต่ parser ต้องการรูปแบบ `...*CK`
 หน้าเว็บจึงแสดงสถานะ disconnected ตลอดเวลา
@@ -1759,7 +1740,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 วิธีแก้ไขและเหตุผล: ออกแบบรูปแบบ `MS1` ใหม่ให้มี `*CK` และเพิ่มการรองรับ prefix ใหม่ใน backend พร้อม unit test
 ทำให้ backend รองรับหลายรูปแบบโดยไม่กระทบรูปแบบเดิม
 
-**P5 ข้อความ CAN สูญหายบน Arduino Mega**
+**P5 ข้อความ CAN สูญหายบนบอร์ดควบคุมมอเตอร์**
 
 สาเหตุและผลกระทบ: MCP2515 มี RX buffer เพียง 2 ช่อง แต่จอยสติ๊กส่ง 2 ข้อความติดกัน ข้อความจึงถูกเขียนทับและคำสั่งแขนหรือคำสั่งล้อสูญหาย
 
@@ -1787,9 +1768,9 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 
 วิธีแก้ไขและเหตุผล: [วิธีแก้ไขที่ใช้จริง เช่น ติดตั้ง heatsink หรือปรับค่า PWM พร้อมเหตุผล]
 
-**P9 ไม่สามารถใช้ Watchdog Timer บน Arduino Mega ได้**
+**P9 ไม่สามารถใช้ Watchdog Timer บนบอร์ดควบคุมมอเตอร์ได้**
 
-สาเหตุและผลกระทบ: FreeRTOS บน AVR ใช้ Watchdog Timer เป็นตัวสร้าง tick Arduino Mega จึงไม่มีกลไกรีเซ็ตเมื่อโปรแกรมค้าง
+สาเหตุและผลกระทบ: FreeRTOS บน AVR ใช้ Watchdog Timer เป็นตัวสร้าง tick บอร์ดควบคุมมอเตอร์จึงไม่มีกลไกรีเซ็ตเมื่อโปรแกรมค้าง
 
 วิธีแก้ไขและเหตุผล: ใช้ timeout ของคำสั่งทดแทน เนื่องจาก tick ของ RTOS มีความสำคัญต่อการทำงานของระบบมากกว่า
 และเสนอให้พัฒนา software watchdog ในอนาคต
@@ -1802,9 +1783,9 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 
 ปัญหาที่ยังเหลืออยู่มีดังนี้
 
-1. เมื่อสัญญาณ CAN ขาดหาย ปั๊มยังเปิดอยู่ได้นานสูงสุด 30 s ซึ่งแก้ไขได้โดยปิด relay ในส่วน fail-safe ของ arm_controller
-2. คำสั่งแขนจากหน้าเว็บและจากจอยสติ๊กอาจชนกันบน CAN ID `0x101` ซึ่งต้องให้บอร์ดแขนเลือกแหล่งคำสั่งในลักษณะเดียวกับ Arduino Mega
-3. Arduino Mega ยังไม่มีกลไกป้องกันโปรแกรมค้าง (P9)
+1. เมื่อสัญญาณ CAN ขาดหาย ปั๊มยังเปิดอยู่ได้นานสูงสุด 30 s ซึ่งแก้ไขได้โดยปิด relay ในส่วน fail-safe ของบอร์ดควบคุมแขนหุ่นยนต์
+2. คำสั่งแขนจากหน้าเว็บและจากจอยสติ๊กอาจชนกันบน CAN ID `0x101` ซึ่งต้องให้บอร์ดแขนเลือกแหล่งคำสั่งในลักษณะเดียวกับบอร์ดควบคุมมอเตอร์
+3. บอร์ดควบคุมมอเตอร์ยังไม่มีกลไกป้องกันโปรแกรมค้าง (P9)
 
 ---
 
@@ -1816,7 +1797,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 
 1. **หุ่นยนต์ฉีดพ่นที่ควบคุมจากระยะไกล** คณะผู้จัดทำพัฒนาหุ่นยนต์ล้อ Mecanum 4 ล้อ พร้อมปั๊มและหัวฉีด 3 แกน
    ที่ควบคุมได้ทั้งด้วยจอยสติ๊ก PS2 และหน้าเว็บ ผลที่ได้: [ ]
-2. **การสื่อสารระหว่างไมโครคอนโทรลเลอร์หลายบอร์ด** Arduino 4 บอร์ดสื่อสารกันบน CAN Bus 500 kbps ผ่าน MCP2515 (SPI)
+2. **การสื่อสารระหว่างไมโครคอนโทรลเลอร์หลายบอร์ด** Arduino 3 บอร์ดสื่อสารกันบน CAN Bus 500 kbps ผ่าน MCP2515 (SPI)
    ใช้ PCA9685 ผ่าน I2C และสื่อสารกับ Raspberry Pi ผ่านโปรโตคอล serial ผลที่ได้: [ ]
 3. **ระบบความปลอดภัย (fail-safe)** ระบบมี timeout ในทุกชั้น Watchdog Timer ปุ่ม E-STOP และการกดค้างเพื่อขับเคลื่อน
    ผลที่ได้: [ ]
@@ -1846,9 +1827,9 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 **สรุป** เป็นวิธีที่เหมาะสมกับหุ่นยนต์ที่มีหลายส่วน และควรใช้ต่อ โดยปรับปรุงให้บอร์ดแขนเลือกแหล่งคำสั่งได้เอง
 และตั้ง mask/filter ของ MCP2515 ให้รับเฉพาะ ID ที่เกี่ยวข้อง
 
-### 5.2.2 FreeRTOS บน Arduino Mega
+### 5.2.2 FreeRTOS บนบอร์ดควบคุมมอเตอร์
 
-**เหตุผลที่เลือกใช้** บอร์ด Arduino Mega ต้องทำงานหลายอย่างที่มีความสำคัญต่างกัน การรับข้อความ CAN ต้องทำทันทีเพราะ
+**เหตุผลที่เลือกใช้** บอร์ดควบคุมมอเตอร์ต้องทำงานหลายอย่างที่มีความสำคัญต่างกัน การรับข้อความ CAN ต้องทำทันทีเพราะ
 MCP2515 มี RX buffer เพียง 2 ช่อง ขณะที่การรับคำสั่งจาก serial และการสร้างข้อความ telemetry ด้วย `snprintf`
 ต้องไม่ทำให้การควบคุมมอเตอร์และการตรวจสอบ timeout ล่าช้า ซึ่งหากใช้ super loop งานทั้งหมดต้องรอกันตามลำดับ
 
@@ -1866,17 +1847,16 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 **เหตุผลที่เลือกใช้** เพื่อให้บอร์ดรับรู้ข้อความ CAN ใหม่ได้ทันทีจากขา INT ของ MCP2515 โดยไม่ต้องสอบถามผ่าน SPI ตลอดเวลา
 
-**ผลที่ได้** บอร์ด arm_controller ตั้งค่า INT0 ระดับ register และ ISR ตั้งเพียง flag ตามหลัก ISR ต้องสั้น ส่วน Arduino Mega
+**ผลที่ได้** บอร์ดควบคุมแขนหุ่นยนต์ ตั้งค่า INT0 ระดับ register และ ISR ตั้งเพียง flag ตามหลัก ISR ต้องสั้น ส่วนบอร์ดควบคุมมอเตอร์
 ใช้ ISR ปลุก task ด้วย semaphore และยังทำงานได้แม้ไม่ได้ต่อสาย INT เนื่องจาก task รอพร้อม timeout 1 tick
 
-**ข้อจำกัด** บอร์ด arm_controller ยังวน `loop()` ตลอดเวลา ประโยชน์ด้านการประหยัดพลังงานจึงยังไม่เกิดขึ้น
-และบอร์ด can_receiver ยังใช้วิธี polling
+**ข้อจำกัด** บอร์ดควบคุมแขนหุ่นยนต์ ยังวน `loop()` ตลอดเวลา ประโยชน์ด้านการประหยัดพลังงานจึงยังไม่เกิดขึ้น
 
 **สรุป** ถูกต้องตามหลักการ และเป็นพื้นฐานสำหรับการใช้ sleep mode แบบ Power-down ในอนาคต
 
 ### 5.2.4 Watchdog Timer แบบ System Reset
 
-**เหตุผลที่เลือกใช้** บอร์ด arm_controller ควบคุม relay ของปั๊ม หากโปรแกรมค้างขณะปั๊มเปิด สารจะถูกฉีดพ่นต่อเนื่องโดยควบคุมไม่ได้
+**เหตุผลที่เลือกใช้** บอร์ดควบคุมแขนหุ่นยนต์ ควบคุม relay ของปั๊ม หากโปรแกรมค้างขณะปั๊มเปิด สารจะถูกฉีดพ่นต่อเนื่องโดยควบคุมไม่ได้
 
 **ผลที่ได้** หากโปรแกรมค้างเกิน 500 ms บอร์ดจะรีเซ็ต และ `setup()` จะปิดปั๊มและสั่งเซอร์โวกลับสู่ตำแหน่งปลอดภัยก่อนทำงานอื่น
 ผลการทดสอบ T08: [ ]
@@ -1931,7 +1911,7 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 **ข้อจำกัด** CPU ต้องรอระหว่างสร้างสัญญาณทุกบิต (ประมาณ 16 µs ต่อบิต หรือประมาณ 1 ms ต่อการอ่านหนึ่งครั้ง)
 และจังหวะขึ้นอยู่กับ `delayMicroseconds()`
 
-**สรุป** เหมาะกับงาน เนื่องจากบอร์ด can-sender มีงานไม่มาก เวลาที่ใช้จึงไม่เป็นปัญหา
+**สรุป** เหมาะกับงาน เนื่องจากบอร์ดรับค่าจากรีโมต มีงานไม่มาก เวลาที่ใช้จึงไม่เป็นปัญหา
 
 ### 5.2.9 โปรโตคอล serial แบบ CSV พร้อม XOR Checksum
 
@@ -2019,7 +1999,7 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 ### 5.2.16 สรุปการประเมิน
 
 วิธีการที่ให้ประโยชน์มากที่สุดต่อโครงงานนี้ คือ การใช้ heartbeat และ timeout ในทุกชั้น การแบ่งงานหลายบอร์ดบน CAN Bus
-และการใช้ FreeRTOS บน Arduino Mega เนื่องจากทำให้ระบบปลอดภัย แยกหน้าที่ได้ชัดเจน และตอบสนองต่อคำสั่งได้ทันท่วงที
+และการใช้ FreeRTOS บนบอร์ดควบคุมมอเตอร์ เนื่องจากทำให้ระบบปลอดภัย แยกหน้าที่ได้ชัดเจน และตอบสนองต่อคำสั่งได้ทันท่วงที
 ส่วนวิธีการที่ควรปรับปรุง ได้แก่ การปิดปั๊มเมื่อสัญญาณ CAN ขาดหาย การเปลี่ยน software sleep เป็น Power-down
 การเพิ่มความแม่นยำของการตรวจจับทรงพุ่ม และการเปลี่ยน motor driver ที่มีแรงดันตกคร่อมต่ำกว่า L298N
 
@@ -2067,10 +2047,10 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 | ลำดับ | รายการ                                              | จำนวน | ราคาต่อหน่วย (บาท) | รวม (บาท) |
 | ---------: | --------------------------------------------------------- | ---------: | --------------------------------: | --------------: |
-|          1 | Arduino Uno R3                                            |       2–3 |                           `[ ]` |         `[ ]` |
+|          1 | Arduino Uno R3                                            |         2 |                           `[ ]` |         `[ ]` |
 |          2 | Arduino Mega 2560                                         |          1 |                           `[ ]` |         `[ ]` |
 |          3 | Raspberry Pi 5 (RAM 8 GB) + adapter USB-C 5V 5A + microSD |          1 |                           `[ ]` |         `[ ]` |
-|          4 | MCP2515 CAN Module                                        |       3–4 |                           `[ ]` |         `[ ]` |
+|          4 | MCP2515 CAN Module                                        |         3 |                           `[ ]` |         `[ ]` |
 |          5 | PCA9685 16-ch PWM                                         |          1 |                           `[ ]` |         `[ ]` |
 |          6 | Servo Motor                                               |          3 |                           `[ ]` |         `[ ]` |
 |          7 | จอยสติ๊ก PS2 ไร้สาย + receiver              |          1 |                           `[ ]` |         `[ ]` |
@@ -2092,7 +2072,7 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 ในการพัฒนาโครงงานหุ่นยนต์ฉีดพ่นสารในสวนทุเรียน (Durian Bot) มีการประเมินต้นทุนการออกแบบและ
 Non-Recurring Engineering (NRE) รวมประมาณ 65,450 บาท ต้นทุนส่วนใหญ่มาจากงานวิศวกรรม ได้แก่ การออกแบบ
-สถาปัตยกรรมระบบที่มี Arduino 4 บอร์ดสื่อสารกันผ่าน CAN Bus ร่วมกับ Raspberry Pi 5 การพัฒนาเฟิร์มแวร์ของแต่ละบอร์ด
+สถาปัตยกรรมระบบที่มี Arduino 3 บอร์ดสื่อสารกันผ่าน CAN Bus ร่วมกับ Raspberry Pi 5 การพัฒนาเฟิร์มแวร์ของแต่ละบอร์ด
 (software SPI กับจอยสติ๊ก PS2, driver PCA9685 ผ่าน I2C, Interrupt และ Watchdog Timer ระดับ register และ FreeRTOS
 บน Arduino Mega 2560) การออกแบบโปรโตคอลระหว่าง Raspberry Pi กับ Arduino พร้อม checksum การพัฒนา backend
 และหน้าเว็บสำหรับควบคุมระยะไกล ตลอดจนการประมวลผลภาพด้วย OpenCV เพื่อตรวจจับทรงพุ่มทุเรียน
@@ -2109,10 +2089,10 @@ Non-Recurring Engineering (NRE) รวมประมาณ 65,450 บาท ต
 
 | ลำดับ | รายการ NRE                                               | งานที่ทำ                                                                                                                                                           | ชั่วโมง | อัตรา (บาท/ชม.) |  รวม (บาท) |
 | ---------: | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------: | ------------------------: | ---------------: |
-|          1 | ออกแบบระบบและวงจร                             | ออกแบบสถาปัตยกรรม 4 บอร์ด + Pi, เลือกอุปกรณ์, วางตาราง CAN ID, ตารางต่อขา, ระบบไฟ/แบตเตอรี่ + step-down |             30 |                       250 |            7,500 |
-|          2 | Firmware`can-sender` + `can_receiver`                      | อ่านจอยสติ๊ก PS2 ด้วย Software SPI, deadzone, ส่ง CAN heartbeat, USB↔CAN bridge, ตรวจรูปแบบคำสั่ง, serial override                     |             30 |                       250 |            7,500 |
-|          3 | Firmware`arm_controller`                                     | driver PCA9685 (I2C) เขียนเอง, เซอร์โวนุ่มนวล, INT0 และ Watchdog ระดับ register, software sleep                                              |             30 |                       250 |            7,500 |
-|          4 | Firmware`motor_controller_simplify`                          | ออกแบบ task FreeRTOS + queue/semaphore/notification, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, telemetry MS1                          |             35 |                       250 |            8,750 |
+|          1 | ออกแบบระบบและวงจร                             | ออกแบบสถาปัตยกรรม 3 บอร์ด + Pi, เลือกอุปกรณ์, วางตาราง CAN ID, ตารางต่อขา, ระบบไฟ/แบตเตอรี่ + step-down |             30 |                       250 |            7,500 |
+|          2 | Firmware บอร์ดรับค่าจากรีโมต                      | อ่านจอยสติ๊ก PS2 ด้วย Software SPI, deadzone, ส่ง CAN heartbeat                     |             30 |                       250 |            7,500 |
+|          3 | Firmware บอร์ดควบคุมแขนหุ่นยนต์                                     | driver PCA9685 (I2C) เขียนเอง, เซอร์โวนุ่มนวล, INT0 และ Watchdog ระดับ register, software sleep                                              |             30 |                       250 |            7,500 |
+|          4 | Firmware บอร์ดควบคุมมอเตอร์                          | ออกแบบ task FreeRTOS + queue/semaphore/notification, รับและตรวจสอบคำสั่ง serial, serial override, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, telemetry MS1                          |             35 |                       250 |            8,750 |
 |          5 | Backend บน Raspberry Pi                                      | FastAPI + WebSocket, thread อ่าน serial + checksum + reconnect, ตั้ง Wi-Fi AP, Docker deploy                                                                       |             30 |                       250 |            7,500 |
 |          6 | Computer Vision (OpenCV)                                       | อ่านกล้อง V4L2/MJPG, สตรีม MJPEG, ตรวจจับทรงพุ่ม (HSV mask + สัดส่วนพื้นที่), ปรับ threshold                                 |             25 |                       250 |            6,250 |
 |          7 | Frontend เว็บ                                              | หน้า control / monitor (SvelteKit), ปุ่มกดค้างเพื่อสั่ง (hold-to-drive), แสดง telemetry                                                         |             25 |                       250 |            6,250 |

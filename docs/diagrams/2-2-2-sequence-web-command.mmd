@@ -2,7 +2,7 @@
 sequenceDiagram
     participant W as เว็บ
     participant B as FastAPI (Pi)
-    participant U as Arduino (USB)
+    participant U as บอร์ดควบคุมมอเตอร์ (USB)
     participant C as CAN Bus
     W->>B: POST /v1/robot/command {channel:"motor", code:1}
     B->>U: "CMD:MOTOR:1\n"
@@ -11,6 +11,6 @@ sequenceDiagram
         U->>C: ID 0x100 [0x01]
     end
     loop ทุก 100 ms
-        U-->>B: "MS1,...*CK\n" / "RB4,...*CK\n"
+        U-->>B: "MS1,...*CK\n"
         B-->>W: WebSocket telemetry
     end

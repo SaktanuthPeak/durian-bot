@@ -3,16 +3,16 @@ flowchart TD
     A([เปิดระบบ]) --> B[Pi บูต Docker: backend + frontend<br/>เปิด Wi-Fi AP]
     A --> C[Arduino ทุกบอร์ด init CAN 500 kbps]
     C --> D{แหล่งคำสั่ง}
-    D -- จอย PS2 --> E[can-sender อ่านจอยทุก 15 ms<br/>แปลงเป็นรหัส 0–14]
+    D -- จอย PS2 --> E[บอร์ดรับค่าจากรีโมต อ่านจอยทุก 15 ms<br/>แปลงเป็นรหัส 0–14]
     E --> F[ส่ง CAN 0x100 + 0x101 ทุก 50 ms]
     D -- เว็บ --> G[POST /v1/robot/command]
     G --> H[backend เขียน CMD:MOTOR/ARM:code ลง Serial]
-    H --> I[Mega: ขับล้อเอง<br/>คำสั่งแขน → CAN 0x101]
+    H --> I[บอร์ดควบคุมมอเตอร์: ขับล้อเอง<br/>คำสั่งแขน → CAN 0x101]
     I --> J
     I --> F
-    F --> J[Mega ขับล้อตามรหัส]
-    F --> K[arm_controller ขยับเซอร์โว / เปิด-ปิดปั๊ม]
-    J --> L[Mega ส่ง telemetry MS1 ทุก 100 ms]
+    F --> J[บอร์ดควบคุมมอเตอร์ ขับล้อตามรหัส]
+    F --> K[บอร์ดควบคุมแขนหุ่นยนต์ ขยับเซอร์โว / เปิด-ปิดปั๊ม]
+    J --> L[บอร์ดควบคุมมอเตอร์ ส่ง telemetry MS1 ทุก 100 ms]
     L --> M[backend ตรวจ checksum → WebSocket]
     M --> N[เว็บแสดงสถานะ + ภาพกล้อง]
     J & K --> O{ไม่ได้รับ CAN<br/>เกิน timeout?}
