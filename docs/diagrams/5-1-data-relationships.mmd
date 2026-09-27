@@ -1,0 +1,20 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart LR
+    subgraph MCU["Mega 2560 (SRAM)"]
+        Q[["commandQueue"]] --> CS["ControlState<br/>(CONTROL เป็นเจ้าของ)"]
+        CS --> SN["ControlSnapshot<br/>(stateMutex)"]
+    end
+    subgraph PI["Backend บน Pi (RAM)"]
+        RS["ReceiverSample ล่าสุด<br/>+ state / parse_errors"]
+        JP["JPEG ล่าสุด<br/>+ CanopyResult"]
+    end
+    CFG[(".env / compose<br/>ค่าตั้ง")] -.-> PI
+    DB[("MongoDB (ไม่บังคับ)<br/>User")] -.-> PI
+    SN -- "MS1 ทุก 100 ms" --> RS
+    CAM["กล้อง"] --> JP
+    RS -- "GET /v1/robot/status<br/>WS /v1/telemetry/ws" --> WEB["เว็บ"]
+    JP -- "GET /v1/camera/stream<br/>GET /v1/camera/status" --> WEB
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    style MCU fill:#ffffff,stroke:#000000,color:#000000
+    style PI fill:#ffffff,stroke:#000000,color:#000000
+    linkStyle default stroke:#000000,color:#000000

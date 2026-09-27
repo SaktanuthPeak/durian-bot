@@ -1,0 +1,37 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart LR
+    subgraph USER["ผู้ควบคุม"]
+        PS2["🎮 จอย PS2"]
+        WEB["📱 เว็บเบราว์เซอร์<br/>(แท็บเล็ต/มือถือ)"]
+    end
+
+    subgraph PI["Raspberry Pi 5 RAM 8 GB (Docker)"]
+        AP["Wi-Fi Access Point"]
+        FE["Frontend<br/>nginx + SvelteKit"]
+        BE["Backend FastAPI<br/>REST + WebSocket"]
+        CV["OpenCV<br/>จับภาพ + MJPEG"]
+    end
+
+    CAM["📷 USB Camera"]
+
+    subgraph CAN["CAN Bus 500 kbps"]
+        SENDER["Uno: can-sender<br/>อ่านจอย PS2"]
+        MEGA["Mega 2560 (FreeRTOS):<br/>motor_controller_simplify<br/>ขับมอเตอร์ 4 ล้อ + วัดแบต + จอ OLED"]
+        ARM["Uno: arm_controller<br/>PCA9685 เซอร์โว + relay ปั๊ม"]
+    end
+
+    PS2 -- "2.4 GHz" --> SENDER
+    WEB -- "HTTP / WebSocket" --> AP --> FE -- "proxy /v1" --> BE
+    CAM -- USB --> CV --> BE
+    SENDER -- "ID 0x100 motor" --> MEGA
+    SENDER -- "ID 0x101 arm" --> ARM
+    BE -- "USB Serial 115200<br/>CMD:MOTOR / CMD:ARM" --> MEGA
+    MEGA -- "telemetry MS1 (+ แบตเตอรี่)" --> BE
+    MEGA -- "PWM + IN1..IN4" --> L298["L298N ×2"] --> WHEELS["มอเตอร์ Mecanum 4 ล้อ"]
+    BAT["🔋 Battery module"] -- "A0 (ADC)" --> MEGA
+    MEGA -- "ID 0x101 (คำสั่งแขนจากเว็บ)" --> ARM
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    style USER fill:#ffffff,stroke:#000000,color:#000000
+    style PI fill:#ffffff,stroke:#000000,color:#000000
+    style CAN fill:#ffffff,stroke:#000000,color:#000000
+    linkStyle default stroke:#000000,color:#000000

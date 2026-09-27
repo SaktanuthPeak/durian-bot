@@ -1,0 +1,17 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart LR
+    INT(["ISR ขา INT<br/>MCP2515"]) -- "xSemaphoreGiveFromISR" --> CANRX
+    CANRX["CAN_RX<br/>priority 3"] -- "CommandEvent" --> Q[["commandQueue<br/>8 ช่อง"]]
+    SERRX["SERIAL_RX<br/>priority 2"] -- "CommandEvent" --> Q
+    Q -- "xQueueReceive<br/>timeout 20 ms" --> CTRL["CONTROL<br/>priority 2"]
+    CTRL -- "analogWrite" --> MOT(["มอเตอร์ 4 ล้อ"])
+    CTRL -- "snapshot<br/>(stateMutex)" --> TEL["TELEMETRY<br/>priority 1"]
+    CTRL -. "xTaskNotifyGive<br/>เมื่อสถานะเปลี่ยน" .-> TEL
+    ADC(["ADC A0<br/>แบตเตอรี่"]) --> TEL
+    TEL -- "MS1 (serialTxMutex)" --> PI(["Raspberry Pi"])
+    PI -- "CMD:..." --> SERRX
+    CANRX <-. "canBusMutex" .-> CTRL
+    CTRL -- "snapshot" --> DISP["DISPLAY<br/>priority 1"]
+    DISP -- "I2C 400 kHz" --> OLED(["OLED SSD1306"])
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    linkStyle default stroke:#000000,color:#000000

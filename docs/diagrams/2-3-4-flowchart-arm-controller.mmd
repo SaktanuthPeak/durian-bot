@@ -1,0 +1,28 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart TD
+    S([setup]) --> S1[ปิด WDT + เคลียร์ WDRF]
+    S1 --> S2[relay ปิดปั๊ม<br/>I2C: init PCA9685 50 Hz<br/>เซอร์โวกลับตำแหน่งปลอดภัย]
+    S2 --> S3[SPI: init MCP2515 500 kbps<br/>ล้าง RX buffer]
+    S3 --> S4[ตั้ง INT0 ขอบขาลง]
+    S4 --> S5[เปิด WDT 500 ms<br/>System Reset]
+    S5 --> L0([loop])
+    L0 --> L1[wdt_reset]
+    L1 --> L2{isDataReady?<br/>ตั้งโดย ISR INT0}
+    L2 -- ใช่ --> L3[อ่าน CAN ทุกข้อความ<br/>ID 0x101 → lastArmStatus]
+    L3 --> L4{Pump_On/Off?}
+    L4 -- ใช่ --> L5[สั่ง relay D4]
+    L2 -- ไม่ --> L6
+    L4 -- ไม่ --> L6
+    L5 --> L6{ไม่ได้ sleep<br/>และครบ 15 ms?}
+    L6 -- ใช่ --> L7[เซอร์โว ±2 ตามคำสั่ง<br/>constrain 150..450]
+    L6 -- ไม่ --> L8
+    L7 --> L8{CAN ขาด > 1 s?}
+    L8 -- ใช่ --> L9[หยุดแขน]
+    L8 -- ไม่ --> L10
+    L9 --> L10{ไม่มีคำสั่งขยับ > 30 s?}
+    L10 -- ใช่ --> L11[sleepMode: หยุดแขน + ปิดปั๊ม]
+    L10 -- ไม่ --> L0
+    L11 --> L0
+    W([loop ค้างเกิน 500 ms]) -.-> RST([WDT reset MCU → เริ่ม setup ใหม่])
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    linkStyle default stroke:#000000,color:#000000

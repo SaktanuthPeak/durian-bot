@@ -1,0 +1,22 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart TD
+    A([เปิดระบบ]) --> B[Pi บูต Docker: backend + frontend<br/>เปิด Wi-Fi AP]
+    A --> C[Arduino ทุกบอร์ด init CAN 500 kbps]
+    C --> D{แหล่งคำสั่ง}
+    D -- จอย PS2 --> E[can-sender อ่านจอยทุก 15 ms<br/>แปลงเป็นรหัส 0–14]
+    E --> F[ส่ง CAN 0x100 + 0x101 ทุก 50 ms]
+    D -- เว็บ --> G[POST /v1/robot/command]
+    G --> H[backend เขียน CMD:MOTOR/ARM:code ลง Serial]
+    H --> I[Mega: ขับล้อเอง<br/>คำสั่งแขน → CAN 0x101]
+    I --> J
+    I --> F
+    F --> J[Mega ขับล้อตามรหัส]
+    F --> K[arm_controller ขยับเซอร์โว / เปิด-ปิดปั๊ม]
+    J --> L[Mega ส่ง telemetry MS1 ทุก 100 ms]
+    L --> M[backend ตรวจ checksum → WebSocket]
+    M --> N[เว็บแสดงสถานะ + ภาพกล้อง]
+    J & K --> O{ไม่ได้รับ CAN<br/>เกิน timeout?}
+    O -- ใช่ --> P[หยุดมอเตอร์ / หยุดแขน]
+    O -- ไม่ --> F
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    linkStyle default stroke:#000000,color:#000000

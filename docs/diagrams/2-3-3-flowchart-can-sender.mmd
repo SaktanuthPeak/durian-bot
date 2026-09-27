@@ -1,0 +1,19 @@
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#ffffff', 'mainBkg': '#ffffff', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#000000', 'secondaryTextColor': '#000000', 'tertiaryTextColor': '#000000', 'textColor': '#000000', 'primaryBorderColor': '#000000', 'secondaryBorderColor': '#000000', 'tertiaryBorderColor': '#000000', 'nodeBorder': '#000000', 'lineColor': '#000000', 'clusterBkg': '#ffffff', 'clusterBorder': '#000000', 'edgeLabelBackground': '#ffffff', 'titleColor': '#000000', 'actorBkg': '#ffffff', 'actorBorder': '#000000', 'actorTextColor': '#000000', 'actorLineColor': '#000000', 'signalColor': '#000000', 'signalTextColor': '#000000', 'labelBoxBkgColor': '#ffffff', 'labelBoxBorderColor': '#000000', 'labelTextColor': '#000000', 'loopTextColor': '#000000', 'noteBkgColor': '#ffffff', 'noteBorderColor': '#000000', 'noteTextColor': '#000000', 'activationBkgColor': '#ffffff', 'activationBorderColor': '#000000'}}}%%
+flowchart TD
+    S([setup]) --> S1[init จอย PS2<br/>software SPI A0–A3]
+    S1 --> S2[init MCP2515 500 kbps]
+    S2 --> L0([loop])
+    L0 --> L1{ครบ 15 ms?}
+    L1 -- ใช่ --> L2[อ่านจอย: แกนอนาล็อก + ปุ่ม]
+    L2 --> L3{จอยตอบ?<br/>lx, ly ≠ 255}
+    L3 -- ไม่ --> L4[แกนอนาล็อก = กลาง]
+    L3 -- ใช่ --> L5[deadzone ±12<br/>แปลงแกนเป็น −1 / 0 / +1]
+    L4 --> L6
+    L5 --> L6[map เป็นรหัสมอเตอร์ 0–10<br/>และรหัสแขน 0–14]
+    L6 --> L7
+    L1 -- ไม่ --> L7{ครบ 50 ms?}
+    L7 -- ใช่ --> L8[ส่ง CAN 0x100 + 0x101<br/>ส่งซ้ำแม้เป็น STOP = heartbeat]
+    L7 -- ไม่ --> L0
+    L8 --> L0
+    classDef default fill:#ffffff,stroke:#000000,color:#000000;
+    linkStyle default stroke:#000000,color:#000000
