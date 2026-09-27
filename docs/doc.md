@@ -102,7 +102,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 4. **หุ่นยนต์อาจเคลื่อนที่ต่อหรือฉีดพ่นค้างเมื่อสัญญาณขาดหายหรือโปรแกรมค้าง** แก้ไขโดยใช้ heartbeat และ timeout
    ในทุกชั้นของระบบ ร่วมกับ Watchdog Timer และปุ่ม E-STOP บนหน้าเว็บ
 5. **ผู้ควบคุมไม่ทราบสถานะของหุ่นยนต์** เช่น แบตเตอรี่ใกล้หมดหรือการเชื่อมต่อขาดหาย แก้ไขโดยส่งข้อมูล telemetry
-   ของแรงดันแบตเตอรี่และสถานะการเชื่อมต่อขึ้นหน้าเว็บ และแสดงผลบนจอ OLED ที่ตัวหุ่นยนต์
+   ของแรงดันแบตเตอรี่และสถานะการเชื่อมต่อขึ้นหน้าเว็บ
 
 ### 1.2.1 วัตถุประสงค์
 
@@ -148,9 +148,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 9. **Servo Motor** ควบคุมมุมด้วยความกว้างพัลส์ประมาณ 0.5–2.5 ms ที่คาบ 20 ms (50 Hz)
    ใช้ปรับมุมหัวฉีดในแนวซ้าย-ขวา แนวหน้า-หลัง และการยกหัวฉีด
 10. **USB Webcam** เป็นกล้องมาตรฐาน UVC ที่อ่านผ่าน V4L2 ใช้ส่งภาพสดขึ้นหน้าเว็บ
-11. **จอ OLED SSD1306 ขนาด 128×64 จุด** เป็นจอขาวดำขนาด 0.96 นิ้ว สื่อสารผ่าน I2C (address 0x3C)
-    ใช้แสดงแรงดันแบตเตอรี่ คำสั่งล้อ คำสั่งแขน และแหล่งคำสั่งบนตัวหุ่นยนต์
-12. **Battery Voltage Sensor** เป็นวงจรแบ่งแรงดันจากตัวต้านทาน 30 kΩ และ 7.5 kΩ (อัตราส่วน 5:1)
+11. **Battery Voltage Sensor** เป็นวงจรแบ่งแรงดันจากตัวต้านทาน 30 kΩ และ 7.5 kΩ (อัตราส่วน 5:1)
     วัดแรงดันได้ 0–25 V โดยให้แรงดันออก 0–5 V เข้าขา ADC A0 ของ Arduino Mega
 
 [แทรกรูปที่ 1.1 อุปกรณ์ฮาร์ดแวร์ที่ใช้ในโครงงาน]
@@ -172,10 +170,9 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 1. `mcp_can` สำหรับควบคุม MCP2515 ผ่าน SPI
 2. `PS2X_lib` และ `PS2_Controller.cpp` สำหรับอ่านจอยสติ๊ก PS2 แบบ software SPI
 3. FreeRTOS (Arduino_FreeRTOS โดย feilipu) สำหรับ task, queue, semaphore และ mutex บน Arduino Mega 2560
-4. `U8g2` สำหรับแสดงผลบนจอ OLED แบบ page buffer
-5. `Wire` และ `SPI` ของ Arduino core ร่วมกับ avr-libc (`avr/io.h`, `avr/interrupt.h`, `avr/wdt.h`)
+4. `Wire` และ `SPI` ของ Arduino core ร่วมกับ avr-libc (`avr/io.h`, `avr/interrupt.h`, `avr/wdt.h`)
    สำหรับเข้าถึง register, ISR และ Watchdog Timer โดยตรง
-6. `PCA9685_Control` ซึ่งคณะผู้จัดทำเขียนขึ้นเองในระดับ register แทนการใช้ไลบรารีของ Adafruit
+5. `PCA9685_Control` ซึ่งคณะผู้จัดทำเขียนขึ้นเองในระดับ register แทนการใช้ไลบรารีของ Adafruit
 
 **Library ฝั่ง backend**
 
@@ -184,9 +181,7 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 3. pyserial สำหรับสื่อสารผ่าน USB serial
 4. opencv-python-headless และ NumPy สำหรับอ่านภาพจากกล้องและประมวลผลภาพ
 5. loguru สำหรับบันทึก log
-6. Beanie, PyMongo และ python-jose สำหรับเชื่อมต่อ MongoDB และสร้าง JWT ของระบบเข้าสู่ระบบ
-   (ใช้เมื่อกำหนดค่า `DATABASE_URI` ดังรายละเอียดในบทที่ 5)
-7. pytest และ pytest-asyncio สำหรับ unit test
+6. pytest และ pytest-asyncio สำหรับ unit test
 
 **Library ฝั่ง frontend**
 
@@ -257,7 +252,6 @@ Raspberry Pi และ Arduino สื่อสารกันด้วยโป�
 | MCP2515                                   | CS / SO / SI / SCK | D53 / D50 / D51 / D52 | SPI                                |
 | MCP2515 INT (ไม่บังคับ)          | –                 | D2 (INT4)             | ปลุก task CAN_RX               |
 | Battery module S                          | –                 | A0                    | GND ร่วม                       |
-| OLED SSD1306 SDA / SCL                    | –                 | D20 / D21             | hardware I2C, VCC 5V, GND ร่วม |
 
 ตำแหน่งของล้อกำหนดตามตารางทิศทางการหมุน โดยคำสั่ง SPIN_LEFT ให้ล้อ M1 และ M3 หมุนถอยหลัง ส่วนล้อ M2 และ M4
 หมุนไปข้างหน้า หากล้อใดหมุนกลับทิศ สามารถแก้ไขได้โดยสลับสาย OUT1 และ OUT2 ที่ L298N
@@ -381,7 +375,7 @@ RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiv
 ### 2.3.2 การออกแบบ Task บน Arduino Mega 2560 (FreeRTOS)
 
 บอร์ด Arduino Mega ต้องทำงานหลายอย่างพร้อมกันมากที่สุดในระบบ ได้แก่ รับข้อความ CAN รับคำสั่งจาก serial ขับมอเตอร์
-จับเวลา timeout ส่ง heartbeat ให้แขน อ่านแรงดันแบตเตอรี่ ส่ง telemetry และแสดงผลบนจอ OLED ประกอบกับมี SRAM 8 KB
+จับเวลา timeout ส่ง heartbeat ให้แขน อ่านแรงดันแบตเตอรี่ และส่ง telemetry ประกอบกับมี SRAM 8 KB
 เพียงพอสำหรับหลาย task จึงเลือกใช้ FreeRTOS บนบอร์ดนี้ ส่วน Arduino Uno มี SRAM เพียง 2 KB ซึ่งไม่เพียงพอ
 และบอร์ด `arm_controller` ใช้ Watchdog Timer สำหรับรีเซ็ต ซึ่งขัดกับการที่ FreeRTOS ใช้ Watchdog Timer เป็นตัวสร้าง tick
 
@@ -399,7 +393,6 @@ RB4,motor,motor_alive,arm,arm_alive,mV,adc,ax1,ax2,ax3,pump,seq*CK   (can_receiv
 | `CONTROL`   |        2 |          256 | เจ้าของ state คำสั่งแต่ผู้เดียว — ดึง queue, เลือกแหล่งคำสั่ง, ตรวจสอบ timeout, ขับมอเตอร์ |
 | `SERIAL_RX` |        2 |          320 | อ่านบรรทัดจาก Pi → ส่งเข้า queue → ตอบ ACK/ERR                                                                                 |
 | `TELEMETRY` |        1 |          448 | อ่านแบตเตอรี่ (task เดียวที่ใช้ ADC) + ส่ง`MS1` ทุก 100 ms หรือทันทีเมื่อถูก notify                    |
-| `DISPLAY`   |        1 |          384 | วาดจอ OLED ทุก 250 ms (task เดียวที่ใช้ I2C จึงไม่ต้องมี mutex ของบัส)                                             |
 
 หลักการออกแบบคือให้ `CONTROL` เป็น task เดียวที่แก้ไขสถานะคำสั่ง task อื่นส่งข้อมูลเข้ามาผ่าน queue เท่านั้น
 จึงไม่มีตัวแปรที่หลาย task เขียนพร้อมกัน และไม่เกิด race condition ส่วน mutex ใช้เฉพาะกับทรัพยากรที่ต้องใช้ร่วมกันจริง
@@ -447,10 +440,9 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 ### 2.4.1 หน้าเว็บ
 
-หน้าเว็บประกอบด้วย 4 หน้า ได้แก่ `/` Operator Console แสดงภาพรวมสถานะและลิงก์ไปยังหน้าอื่น, `/control`
+หน้าเว็บประกอบด้วย 3 หน้า ได้แก่ `/` Operator Console แสดงภาพรวมสถานะและลิงก์ไปยังหน้าอื่น, `/control`
 แสดงภาพสดจากกล้อง ปุ่มขับเคลื่อน 8 ทิศทางและหมุนตัว ปุ่มแขน 4 ทิศทางและยกหัวฉีดขึ้นลง ปุ่มเปิดปิดปั๊ม ปุ่ม E-STOP
-แรงดันแบตเตอรี่ และสถานะการเชื่อมต่อ, `/monitor` แสดง telemetry แบบเวลาจริงผ่าน WebSocket และ `/login`
-สำหรับเข้าสู่ระบบเมื่อเปิดใช้งานระบบผู้ใช้
+แรงดันแบตเตอรี่ และสถานะการเชื่อมต่อ, `/monitor` แสดง telemetry แบบเวลาจริงผ่าน WebSocket
 
 หลักการออกแบบหน้าเว็บมีดังนี้
 
@@ -467,24 +459,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 **รูปที่ 2.8** หน้าเว็บ /control และ /monitor
 
-### 2.4.2 จอ OLED บนตัวหุ่นยนต์
-
-จอ OLED ช่วยให้ผู้ที่อยู่ใกล้หุ่นยนต์ทราบสถานะได้โดยไม่ต้องเปิดหน้าเว็บ และปรับปรุงการแสดงผลทุก 250 ms
-รูปแบบการแสดงผลแสดงในรูปที่ 2.9
-
-```text
-┌────────────────────────────┐
-│DURIAN BOT   SRC:WEB        │   แหล่งคำสั่งที่คุมล้อ: WEB / JOY / ---
-│BAT: 12.05 V                │
-│M: FWD                      │   คำสั่งล้อ
-│A: PUMP ON                  │   คำสั่งแขน/ปั๊ม
-│PWM: 150/255                │   duty ที่ส่งให้ L298N
-└────────────────────────────┘
-```
-
-**รูปที่ 2.9** รูปแบบการแสดงผลบนจอ OLED
-
-### 2.4.3 จอยสติ๊ก PS2
+### 2.4.2 จอยสติ๊ก PS2
 
 ปุ่มแต่ละปุ่มของจอยสติ๊กถูกแปลงเป็นรหัสคำสั่งตามตารางที่ 2.4 โดยแกนอนาล็อกซ้ายใช้ขับล้อ ปุ่ม D-pad ซ้ายและขวาใช้หมุนตัว
 แกนอนาล็อกขวาใช้หมุนหัวฉีด ปุ่ม △ และ ✕ ใช้ยกหัวฉีดขึ้นและลง และปุ่ม □ และ ○ ใช้เปิดและปิดปั๊ม
@@ -515,8 +490,8 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 1. `can-sender` (Arduino Uno) อ่านจอยสติ๊ก PS2 แปลงเป็นรหัสคำสั่ง และส่ง CAN heartbeat ทุก 50 ms
 2. `arm_controller` (Arduino Uno) รับข้อความ CAN ID `0x101` ขยับเซอร์โว 3 แกนผ่าน PCA9685 และเปิดปิด relay ของปั๊ม
-3. `motor_controller_simplify` (Arduino Mega 2560) ทำงานด้วย FreeRTOS 5 task ได้แก่ รับข้อความ CAN และคำสั่งจาก serial
-   ขับล้อ 4 ล้อ วัดแรงดันแบตเตอรี่ ส่ง telemetry `MS1` แสดงผลบนจอ OLED และส่งต่อคำสั่งแขนจากหน้าเว็บเข้า CAN Bus
+3. `motor_controller_simplify` (Arduino Mega 2560) ทำงานด้วย FreeRTOS 4 task ได้แก่ รับข้อความ CAN และคำสั่งจาก serial
+   ขับล้อ 4 ล้อ วัดแรงดันแบตเตอรี่ ส่ง telemetry `MS1` และส่งต่อคำสั่งแขนจากหน้าเว็บเข้า CAN Bus
 4. `can_receiver` (Arduino Uno) แปลงสัญญาณระหว่าง USB กับ CAN และควบคุมแขนกับปั๊มได้เอง ใช้แทน Arduino Mega ในรูปแบบ B
 
 ฝั่ง Raspberry Pi แบ่งเป็น `receiver_canbus.py` ซึ่งอ่านข้อมูลจาก serial ใน thread แยก ตรวจสอบ checksum
@@ -535,7 +510,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 3. **Raspberry Pi กับ Arduino Mega** ใช้ USB serial 115200 8N1 โดยส่งคำสั่ง `CMD:...` ลงไป และรับ `MS1,...*CK`
    กับข้อความตอบรับ (ACK) แบบ JSON กลับมา (`receiver_canbus.py` และ `motor_controller_simplify.ino`)
 4. **Arduino Mega กับ L298N** ใช้ GPIO ที่ขา IN1–IN4 และ PWM ที่ขา ENA/ENB (`applyCommand()` และ `setMotor()`)
-5. **arm_controller กับ PCA9685** และ **Arduino Mega กับจอ OLED** ใช้ I2C (`PCA9685_Control.cpp` และ `oled_display.cpp` ที่ 400 kHz)
+5. **arm_controller กับ PCA9685** ใช้ I2C (`PCA9685_Control.cpp`)
 6. **หน้าเว็บกับ backend** ใช้ HTTP และ WebSocket ผ่าน nginx ในรูปแบบ JSON (`robot/api.ts` และ `robot/router.py`)
 7. **กล้อง backend และหน้าเว็บ** รับภาพผ่าน USB UVC (V4L2) และส่งออกเป็น HTTP MJPEG (`camera_service.py`)
 
@@ -544,8 +519,8 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 1. เริ่มจากเฟิร์มแวร์บอร์ดเดียว (`Robot_main`) ที่อ่านจอยสติ๊กและควบคุมทุกอุปกรณ์ จากนั้นแยกเป็นหลายบอร์ด
    ที่สื่อสารกันบน CAN Bus (`can-sender`, `arm_controller` และบอร์ดมอเตอร์) เพื่อลดจำนวนสายไฟและแบ่งหน้าที่ของแต่ละบอร์ดให้ชัดเจน
 2. บอร์ดมอเตอร์พัฒนาจากแบบ super loop ร่วมกับ encoder (`motor_controller_mega`) ไปเป็นการทดลองใช้ FreeRTOS
-   (`motor_controller_rtos`) และพัฒนาเป็นรุ่นปัจจุบัน `motor_controller_simplify` ซึ่งใช้ FreeRTOS 5 task
-   พร้อมวัดแรงดันแบตเตอรี่ แสดงผลบนจอ OLED และรับคำสั่งจาก serial
+   (`motor_controller_rtos`) และพัฒนาเป็นรุ่นปัจจุบัน `motor_controller_simplify` ซึ่งใช้ FreeRTOS 4 task
+   พร้อมวัดแรงดันแบตเตอรี่และรับคำสั่งจาก serial
 3. โปรโตคอล serial พัฒนาจาก `RB1`–`RB4` (can_receiver) เป็น `MC1` (Arduino Mega รุ่นก่อน) และ `MS1` (รุ่นปัจจุบัน)
    โดย backend รองรับทุกรูปแบบด้วยการแยกตาม prefix
 4. Backend พัฒนาจากการใช้ข้อมูลจำลอง ไปเป็นการอ่าน serial จริง เพิ่ม API สั่งงาน เพิ่มการส่งภาพจากกล้อง
@@ -563,7 +538,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 | ประเด็น                 | Super loop +`millis()` (รุ่นก่อน)                              | FreeRTOS (รุ่นปัจจุบัน)                                                 |
 | ------------------------------ | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| การแบ่งงาน           | ทุกอย่างอยู่ใน`loop()` เรียงกัน                  | 5 task แยกหน้าที่ชัดเจน                                             |
+| การแบ่งงาน           | ทุกอย่างอยู่ใน`loop()` เรียงกัน                  | 4 task แยกหน้าที่ชัดเจน                                             |
 | ความสำคัญของงาน | ทุกงานเท่ากัน รอคิวใน loop                           | CAN_RX priority สูงสุด แย่ง CPU ได้ทันที                          |
 | การรอ                     | ต้อง non-blocking ทุกบรรทัด                                 | task รอ queue หรือ semaphore ได้โดยไม่ใช้เวลาประมวลผล |
 | ข้อมูลร่วม           | ตัวแปร global                                                      | queue + mutex                                                                       |
@@ -593,9 +568,8 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 
 1. อ่านจอยสติ๊ก PS2 ทุก 15 ms (`PS2_POLL_INTERVAL_MS`) และส่งคำสั่งบน CAN Bus ทุก 50 ms (`CAN_SEND_INTERVAL`)
 2. อ่าน ADC ของแบตเตอรี่พร้อมส่ง telemetry `MS1` ทุก 100 ms หรือทันทีเมื่อคำสั่งเปลี่ยน (`TELEMETRY_PERIOD`)
-3. ปรับปรุงการแสดงผลบนจอ OLED ทุก 250 ms (`DISPLAY_PERIOD`)
-4. อ่านภาพจากกล้องที่ 15 fps ตามค่าเริ่มต้นใน Docker Compose (`CAMERA_FPS`)
-5. หน้า `/control` ขอข้อมูลสถานะจาก backend ทุก 500 ms
+3. อ่านภาพจากกล้องที่ 15 fps ตามค่าเริ่มต้นใน Docker Compose (`CAMERA_FPS`)
+4. หน้า `/control` ขอข้อมูลสถานะจาก backend ทุก 500 ms
 
 ### 4.2.2 การปรับเทียบ
 
@@ -685,7 +659,7 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 ระบบจึงเก็บข้อมูลส่วนใหญ่ไว้ในหน่วยความจำแบบ latest-wins คือค่าใหม่เขียนทับค่าเดิม และไม่บันทึก telemetry ลงฐานข้อมูล
 วิธีนี้ช่วยลดการเขียนข้อมูลลง microSD ของ Raspberry Pi และทำให้ระบบเริ่มทำงานได้โดยไม่ต้องมีฐานข้อมูล
 
-ข้อมูลในระบบแบ่งได้ 5 ประเภท ดังนี้
+ข้อมูลในระบบแบ่งได้ 4 ประเภท ดังนี้
 
 1. **ข้อมูลสดบนไมโครคอนโทรลเลอร์** เก็บใน SRAM ของ Arduino Mega และ Uno เช่น `ControlState`, `ControlSnapshot`
    และตำแหน่งเซอร์โว ข้อมูลจะหายไปเมื่อปิดไฟหรือรีเซ็ตบอร์ด
@@ -695,11 +669,8 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
    (1 ช่องต่อ WebSocket client) ข้อมูลจะถูกนำไปใช้ทันที
 4. **ค่าตั้ง (configuration)** เก็บในไฟล์ `.env`, `docker-compose*.yml` และ `robot_config.h` เช่น พอร์ต serial ขนาดภาพ
    CAN ID และค่า timeout ข้อมูลคงอยู่ถาวรจนกว่าจะแก้ไขไฟล์
-5. **ข้อมูลผู้ใช้ (ไม่บังคับ)** เก็บใน collection `User` ของ MongoDB ผ่าน Beanie สำหรับระบบเข้าสู่ระบบ
-   และใช้งานเฉพาะเมื่อกำหนดค่า `DATABASE_URI`
 
-ในการใช้งานปัจจุบัน ค่า `DATABASE_URI` เป็นค่าว่าง backend จึงข้ามการเชื่อมต่อ MongoDB (`run.py`)
-และส่วนควบคุมหุ่นยนต์ทั้งหมดทำงานได้โดยไม่ต้องมีฐานข้อมูล ความสัมพันธ์ของข้อมูลแสดงในรูปที่ 5.1
+ระบบไม่ใช้ฐานข้อมูล ส่วนควบคุมหุ่นยนต์ทั้งหมดจึงทำงานได้ด้วยข้อมูลในหน่วยความจำและไฟล์ค่าตั้งเท่านั้น ความสัมพันธ์ของข้อมูลแสดงในรูปที่ 5.1
 
 ![รูปที่ 5.1 ความสัมพันธ์ของข้อมูลในระบบ](images/5-1-data-relationships.png)
 
@@ -708,10 +679,9 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 ## 5.2 โครงสร้างข้อมูลและฟิลด์สำคัญ
 
 **`ControlSnapshot`** บน Arduino Mega (`motor_controller_simplify.ino`) เป็นสำเนาสถานะที่ task `CONTROL` เขียน
-และ task `TELEMETRY` กับ `DISPLAY` อ่าน ประกอบด้วยฟิลด์ดังนี้
+และ task `TELEMETRY` อ่าน ประกอบด้วยฟิลด์ดังนี้
 
 - `motor` และ `arm` (`int8_t`) คำสั่งล้อและคำสั่งแขนที่ใช้งานอยู่ (−1 หมายถึงไม่มีคำสั่ง)
-- `source` (`CommandSource`) แหล่งคำสั่งที่ควบคุมล้อ (WEB, JOY หรือไม่มี)
 - `pwm` (`uint8_t`) ค่า duty cycle ของมอเตอร์
 - `commandTime` (`unsigned long`) เวลาจาก `millis()` เมื่อได้รับคำสั่งที่กำลังขับล้อ
 - `battery` (`BatterySample{adc, millivolts}`) ผลการอ่านแรงดันแบตเตอรี่ล่าสุด
@@ -727,18 +697,14 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 **`CanopyResult`** บน Raspberry Pi (`vision.py`) ประกอบด้วย `ratio` (0.0–1.0), `detected` (bool)
 และ `box` (x, y, w, h ของทรงพุ่มที่ใหญ่ที่สุด หรือ `None`)
 
-**`User`** ใน MongoDB (ไม่บังคับ) กำหนดใน `backend/apiapp/modules/user/model.py` ประกอบด้วย `username`
-(มี unique index และแปลงเป็นตัวพิมพ์เล็ก), `name`, `email`, `hashed_password` (แฮชด้วย werkzeug), `created_at`,
-`updated_at` และ `last_login_date`
-
 ## 5.3 เก็บข้อมูลแต่ละประเภทเพื่อใช้ทำอะไร และส่วนใดของระบบเรียกใช้จริง
 
 **ข้อมูลบนไมโครคอนโทรลเลอร์**
 
 1. `ControlState` (Arduino Mega) ใช้ตัดสินว่าจะขับล้อตามแหล่งคำสั่งใดและใช้ตรวจสอบ timeout
    โดย task `CONTROL` เป็นผู้เขียนและผู้อ่านเพียงผู้เดียว
-2. `ControlSnapshot` (Arduino Mega) ใช้ส่ง telemetry และแสดงผลบนจอ OLED โดย `CONTROL` เขียนสถานะคำสั่ง
-   `TELEMETRY` เขียนค่าแบตเตอรี่ และ `TELEMETRY` กับ `DISPLAY` เป็นผู้อ่าน
+2. `ControlSnapshot` (Arduino Mega) ใช้ส่ง telemetry โดย `CONTROL` เขียนสถานะคำสั่ง
+   และ `TELEMETRY` เขียนค่าแบตเตอรี่และเป็นผู้อ่าน
 3. ตำแหน่งเซอร์โว (arm_controller) ใช้ขยับหัวฉีดทีละขั้นจากตำแหน่งเดิมภายใน `loop()`
    และเมื่อบอร์ดรีเซ็ตจะกลับสู่ตำแหน่งปลอดภัย
 
@@ -752,8 +718,6 @@ backend เปิดกล้องด้วย `cv2.VideoCapture` ผ่าน 
 4. `CanopyResult` ล่าสุด เขียนโดย `_capture_frame_sync()` ใช้วาดข้อความบนภาพ และส่งออกผ่าน `GET /v1/camera/status`
 5. ค่าตั้งใน `.env` ถูกอ่านโดย `Settings` เมื่อ backend เริ่มทำงาน ใช้เลือกโหมดข้อมูลจำลองหรือ serial พอร์ต ขนาดภาพ
    และเกณฑ์ตรวจจับทรงพุ่ม
-6. `User` ใน MongoDB สร้างด้วย `scripts/init-admin` และใช้ในโมดูล `auth` สำหรับการเข้าสู่ระบบและ JWT
-   เฉพาะเมื่อกำหนดค่า `DATABASE_URI`
 
 ## 5.4 ตัวอย่างข้อมูล การค้นคืน และอายุข้อมูล
 
@@ -788,7 +752,6 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 
 **การค้นคืนข้อมูล** ข้อมูลสดเรียกได้ผ่าน API เท่านั้น และไม่มีการค้นคืนข้อมูลย้อนหลัง ได้แก่ `GET /v1/robot/status`,
 `GET /v1/telemetry`, `WS /v1/telemetry/ws`, `GET /v1/camera/status` และ `GET /v1/camera/stream`
-ส่วน collection `User` ค้นหาด้วย `username` ซึ่งมี unique index
 
 **อายุของข้อมูล**
 
@@ -797,7 +760,7 @@ PWM 150 คำสั่งมีอายุ 24 ms และเป็น frame �
 2. ข้อมูล telemetry ล่าสุดบน backend ถูกเขียนทับทุก frame (ประมาณ 100 ms) และหากมีอายุเกิน 1.5 s จะถือว่า `disconnected`
    ส่วนภาพ JPEG ล่าสุดถูกเขียนทับทุกเฟรม (1/15 s)
 3. queue ของ WebSocket client มีขนาด 1 ช่อง เมื่อเต็มจะทิ้ง frame เก่า client ที่ช้าจึงไม่ส่งผลต่อ client อื่น
-4. ข้อมูลสดทั้งหมดหายไปเมื่อรีเซ็ตบอร์ดหรือเริ่ม backend ใหม่ ส่วนค่าตั้งและข้อมูล `User` เก็บไว้ถาวร
+4. ข้อมูลสดทั้งหมดหายไปเมื่อรีเซ็ตบอร์ดหรือเริ่ม backend ใหม่ ส่วนค่าตั้งเก็บไว้ถาวร
 
 ---
 
@@ -812,17 +775,17 @@ rescue-robot/
 ├── firmware/
 │   ├── can-sender/                  Uno: อ่านจอย PS2 → CAN 0x100 / 0x101
 │   ├── arm_controller/              Uno: เซอร์โว 3 แกน (PCA9685) + relay ปั๊ม
-│   ├── motor_controller_simplify/   Mega 2560 + FreeRTOS: ล้อ 4 ล้อ, แบต, OLED, Serial ↔ Pi
+│   ├── motor_controller_simplify/   Mega 2560 + FreeRTOS: ล้อ 4 ล้อ, แบต, Serial ↔ Pi
 │   ├── can_receiver/                Uno: USB ↔ CAN bridge (โหมด B)
 │   ├── can_bus_debug/               เครื่องมือดูข้อความบน CAN
 │   └── Robot_main/, motor_controller*/, receiver-canbus/, flame_telemetry/   รุ่นก่อน/ทดลอง ไม่ได้ใช้ในระบบหลัก
 ├── backend/
 │   ├── apiapp/infrastructure/       receiver_canbus.py (protocol serial), camera_service.py, vision.py, telemetry_hub.py
-│   ├── apiapp/modules/              robot/, camera/, telemetry/, auth/, user/, health/  (router → use_case → schemas)
+│   ├── apiapp/modules/              robot/, camera/, telemetry/, health/  (router → use_case → schemas)
 │   ├── apiapp/core/config.py        ค่าตั้งทั้งหมดจาก .env
 │   └── tests/                       pytest
 ├── frontend/
-│   ├── src/routes/                  /, /control, /monitor, /login
+│   ├── src/routes/                  /, /control, /monitor
 │   ├── src/lib/features/            robot/ (api.ts, hold-command.ts), camera/, telemetry/ (ws-source.ts)
 │   └── nginx.conf                   เสิร์ฟเว็บ + proxy /v1 ไป backend
 ├── scripts/                         setup-rpi-ap.sh, deploy-to-pi.sh, read_receiver_canbus.py
@@ -1188,7 +1151,7 @@ if (checksum < 0x10) Serial.print('0');
 Serial.println(checksum, HEX);
 ```
 
-## 6.5 บอร์ด motor_controller_simplify (Arduino Mega 2560): FreeRTOS, PWM, ADC และ I2C
+## 6.5 บอร์ด motor_controller_simplify (Arduino Mega 2560): FreeRTOS, PWM และ ADC
 
 โค้ดของบอร์ดนี้อยู่ในไดเรกทอรี `firmware/motor_controller_simplify/` โครงสร้างของ task
 และเหตุผลที่เลือกใช้ FreeRTOS อธิบายไว้ในหัวข้อ 2.3.2
@@ -1206,7 +1169,7 @@ RTOS แบ่งงานออกเป็น task ที่มีลำดั
 - **Task notification** ใช้ปลุก task ที่ระบุโดยตรง และมีภาระน้อยที่สุด
 
 FreeRTOS บน AVR (ไลบรารี Arduino_FreeRTOS) ใช้ Watchdog Timer เป็นตัวสร้าง tick (ประมาณ 15 ms) และ `loop()` ทำหน้าที่เป็น
-idle task ในโครงงาน Arduino Mega แบ่งงานเป็น 5 task ได้แก่ `CAN_RX`, `CONTROL`, `SERIAL_RX`, `TELEMETRY` และ `DISPLAY`
+idle task ในโครงงาน Arduino Mega แบ่งงานเป็น 4 task ได้แก่ `CAN_RX`, `CONTROL`, `SERIAL_RX` และ `TELEMETRY`
 และใช้ครบทั้ง queue, semaphore จาก ISR, mutex 3 ตัว และ task notification
 
 #### PWM บน Arduino Mega
@@ -1252,19 +1215,6 @@ ADC ของ AVR เป็นแบบ successive approximation ความล
 ในโครงงาน Arduino Mega อ่านโมดูลวัดแรงดันแบตเตอรี่ 0–25 V (30 kΩ / 7.5 kΩ) ที่ขา `A0` โดยเขียนโปรแกรมระดับ register
 แทน `analogRead()` แล้วเฉลี่ย 8 ค่า (moving average) เพื่อลดสัญญาณรบกวนจากมอเตอร์ และส่งค่าขึ้นหน้าเว็บใน telemetry `MS1`
 
-#### I2C กับจอ OLED
-
-Arduino Mega (ขา D20 SDA และ D21 SCL) สื่อสารกับจอ OLED SSD1306 (address 0x3C) ผ่าน hardware I2C (TWI) ที่ 400 kHz
-(fast mode) ด้วยไลบรารี U8g2 โดยมีประเด็นการออกแบบดังนี้
-
-- **Hardware I2C แทน Software I2C** โค้ดตัวอย่างเดิม (`receiver-canbus.ino`) ใช้ software I2C ที่ขา D6/D7 ของ Arduino Uno
-  แต่บน Arduino Mega ขา D6/D7 เป็น PWM ของ L298N จึงเปลี่ยนมาใช้ TWI ของชิป ซึ่งฮาร์ดแวร์สร้าง clock, START, STOP และ ACK เอง
-  ทำให้ทำงานเร็วกว่าและลดภาระของ CPU
-- **Page buffer** จอขนาด 128×64 จุดใช้หน่วยความจำ 1,024 ไบต์ หากเก็บทั้งจอใน RAM จะใช้ 1 ใน 8 ของ SRAM ของ Arduino Mega
-  จึงใช้โหมด `_1_` ของ U8g2 ซึ่งวาดทีละ page (128×8 จุด หรือ 128 ไบต์) จำนวน 8 รอบ (`firstPage()` และ `nextPage()`)
-- **เวลาส่ง 1 เฟรม** 1,024 ไบต์ × 9 บิต (ข้อมูล 8 บิตและ ACK) ≈ 9,216 บิต ที่ 400 kHz ใช้เวลาประมาณ 23 ms
-  (ที่ 100 kHz ใช้เวลาประมาณ 92 ms)
-
 ### 6.5.2 การสร้าง RTOS objects และ task
 
 ```cpp
@@ -1281,7 +1231,6 @@ xTaskCreate(taskCanReceive,    "CAN_RX",    CAN_TASK_STACK,       nullptr, 3, nu
 xTaskCreate(taskControl,       "CONTROL",   CONTROL_TASK_STACK,   nullptr, 2, nullptr);
 xTaskCreate(taskSerialReceive, "SERIAL_RX", SERIAL_TASK_STACK,    nullptr, 2, nullptr);
 xTaskCreate(taskTelemetry,     "TELEMETRY", TELEMETRY_TASK_STACK, nullptr, 1, &telemetryTask);
-xTaskCreate(taskDisplay,       "DISPLAY",   DISPLAY_TASK_STACK,   nullptr, 1, nullptr);
 // scheduler เริ่มหลัง setup() จบ และ loop() กลายเป็น idle task
 ```
 
@@ -1413,7 +1362,7 @@ void taskTelemetry(void *) {
     const BatterySample battery = battery_read();       // task เดียวที่ใช้ ADC
 
     ControlSnapshot copy;
-    xSemaphoreTake(stateMutex, portMAX_DELAY);          // เก็บค่าแบตให้ DISPLAY + copy สถานะ
+    xSemaphoreTake(stateMutex, portMAX_DELAY);          // เก็บค่าแบตลง snapshot + copy สถานะ
     snapshot.battery = battery;
     copy = snapshot;
     xSemaphoreGive(stateMutex);
@@ -1434,47 +1383,6 @@ void taskTelemetry(void *) {
 // ตัวอย่าง: MS1,1,1,-1,0,12048,493,150,24,812*27
 //          = เดินหน้า, แบต 12.05 V, PWM 150, คำสั่งอายุ 24 ms, ไม่มีคำสั่งแขน
 ```
-
-### 6.5.8 I2C: จอ OLED และ Task DISPLAY
-
-```cpp
-// Page buffer (_1_) → ใช้ RAM 128 byte แทน 1 KB, HW_I2C = ใช้ TWI ของ Mega (D20/D21)
-U8G2_SSD1306_128X64_NONAME_1_HW_I2C oled(U8G2_R0, U8X8_PIN_NONE);
-
-void oled_init() {
-  oled.setBusClock(400000);          // I2C fast mode
-  oled.begin();                      // เรียกใน setup() ก่อน scheduler เริ่ม เพราะ U8g2 ใช้ delay() ตอนบูตจอ
-}
-
-void oled_draw(const DisplayData &data) {
-  oled.firstPage();
-  do {                               // วาดซ้ำทุก page (8 รอบ) ส่งทีละ 128 byte ทาง I2C
-    oled.setFont(u8g2_font_6x10_tf);
-    oled.setCursor(0, 10); oled.print("DURIAN BOT   SRC:"); oled.print(source_text(data.source));
-    oled.setCursor(0, 23); oled.print("BAT: "); oled.print(data.batteryMillivolts / 1000.0f, 2); oled.print(" V");
-    oled.setCursor(0, 36); oled.print("M: ");   oled.print(status_text(data.motor));
-    oled.setCursor(0, 49); oled.print("A: ");   oled.print(status_text(data.arm));
-    oled.setCursor(0, 62); oled.print("PWM: "); oled.print(data.pwm); oled.print("/255");
-  } while (oled.nextPage());
-}
-
-void taskDisplay(void *) {
-  TickType_t lastWake = xTaskGetTickCount();
-  for (;;) {
-    vTaskDelayUntil(&lastWake, DISPLAY_PERIOD);          // ทุก 250 ms แบบคาบคงที่
-    ControlSnapshot copy;
-    xSemaphoreTake(stateMutex, portMAX_DELAY);
-    copy = snapshot;
-    xSemaphoreGive(stateMutex);
-    // วาดนอก mutex: 1 เฟรมใช้เวลา I2C ~23 ms ไม่ควรถือ mutex นานขนาดนั้น
-    oled_draw({copy.motor, copy.arm, copy.source, copy.pwm, copy.battery.millivolts});
-  }
-}
-```
-
-Task `DISPLAY` มี priority ต่ำสุด (1) การส่งข้อมูล I2C ประมาณ 23 ms ต่อเฟรมจึงถูก task ที่สำคัญกว่า เช่น `CAN_RX` และ `CONTROL`
-แทรกการทำงานได้ตลอดเวลา การแสดงผลจึงไม่ส่งผลต่อการควบคุมมอเตอร์ ซึ่งแตกต่างจาก super loop ที่การวาดจอ 23 ms
-จะทำให้งานอื่นทั้งหมดใน `loop()` ต้องรอ 23 ms
 
 ## 6.6 เว็บและเซิร์ฟเวอร์บน Raspberry Pi: การรับ telemetry การส่งคำสั่ง การส่งภาพ และการตรวจจับทรงพุ่ม
 
@@ -1750,7 +1658,7 @@ unit test อยู่ในไดเรกทอรี `backend/tests/` แบ�
    สถานะข้อมูลเก่า (stale) รวมถึง REST และ WebSocket
 3. `test_camera.py` (3 test) และ `test_vision.py` (4 test) ทดสอบการส่งภาพและสถานะของกล้องด้วยข้อมูลจำลอง
    และการตรวจจับทรงพุ่มบนภาพสังเคราะห์
-4. `test_health.py`, `test_auth_refresh.py` และ `test_user_unit.py` (รวม 4 test) ทดสอบ health check, JWT refresh และข้อมูลผู้ใช้
+4. `test_health.py` (1 test) ทดสอบ health check
 
 ## 7.3 ผลการทดสอบและตัวอย่างผลลัพธ์
 
@@ -1798,12 +1706,11 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 3. **P3** ข้อมูล serial ผิดเพี้ยนขณะมอเตอร์และปั๊มทำงาน
 4. **P4** backend ไม่ได้รับ telemetry จาก Arduino Mega
 5. **P5** ข้อความ CAN สูญหายบน Arduino Mega
-6. **P6** ขาของจอ OLED ซ้ำกับขา PWM ของมอเตอร์
-7. **P7** อ่านข้อมูล serial ไม่ได้ในช่วงแรกหลังเปิดพอร์ต
-8. **P8** หุ่นยนต์เคลื่อนที่ต่อหลังปล่อยปุ่มบนหน้าเว็บขณะ Wi-Fi ช้า
-9. **P9** L298N ร้อนและมอเตอร์ได้รับแรงดันไม่เต็มที่
-10. **P10** ไม่สามารถใช้ Watchdog Timer บน Arduino Mega ได้
-11. **P11** [ปัญหาอื่นที่พบจริง เช่น ไฟตก หรือสาย CAN ไม่มี terminator]
+6. **P6** อ่านข้อมูล serial ไม่ได้ในช่วงแรกหลังเปิดพอร์ต
+7. **P7** หุ่นยนต์เคลื่อนที่ต่อหลังปล่อยปุ่มบนหน้าเว็บขณะ Wi-Fi ช้า
+8. **P8** L298N ร้อนและมอเตอร์ได้รับแรงดันไม่เต็มที่
+9. **P9** ไม่สามารถใช้ Watchdog Timer บน Arduino Mega ได้
+10. **P10** [ปัญหาอื่นที่พบจริง เช่น ไฟตก หรือสาย CAN ไม่มี terminator]
 
 ## 8.2 สาเหตุและผลกระทบของแต่ละปัญหา
 
@@ -1814,13 +1721,11 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 4. **P4** เฟิร์มแวร์รุ่นแรกส่งข้อมูลรูปแบบ `MC1,...,<CK>` จำนวน 7 ฟิลด์ โดยไม่มีเครื่องหมาย `*` แต่ parser ต้องการรูปแบบ `...*CK`
    หน้าเว็บจึงแสดงสถานะ disconnected ตลอดเวลา
 5. **P5** MCP2515 มี RX buffer เพียง 2 ช่อง แต่จอยสติ๊กส่ง 2 ข้อความติดกัน ข้อความจึงถูกเขียนทับและคำสั่งแขนหรือคำสั่งล้อสูญหาย
-6. **P6** โค้ดตัวอย่างเดิมใช้ software I2C ที่ขา D6/D7 ซึ่งบน Arduino Mega เป็นขา PWM ของ L298N
-   จึงใช้จอ OLED ร่วมกับมอเตอร์ไม่ได้
-7. **P7** การเปิดพอร์ต serial ทำให้ขา DTR สั่งให้ Arduino รีเซ็ต ในช่วง 1–2 s แรกจึงได้รับข้อความจาก bootloader
+6. **P6** การเปิดพอร์ต serial ทำให้ขา DTR สั่งให้ Arduino รีเซ็ต ในช่วง 1–2 s แรกจึงได้รับข้อความจาก bootloader
    หรือข้อมูลที่ไม่ถูกต้อง
-8. **P8** คำขอที่ค้างอยู่ต่อคิวกันเมื่อเครือข่ายช้า คำสั่งเก่าจึงถูกส่งไปหลังจากปล่อยปุ่มแล้ว
-9. **P9** L298N ใช้ทรานซิสเตอร์ BJT ซึ่งมีแรงดันตกคร่อมประมาณ 2 V มอเตอร์จึงหมุนช้าลงและ driver มีความร้อนสูง
-10. **P10** FreeRTOS บน AVR ใช้ Watchdog Timer เป็นตัวสร้าง tick Arduino Mega จึงไม่มีกลไกรีเซ็ตเมื่อโปรแกรมค้าง
+7. **P7** คำขอที่ค้างอยู่ต่อคิวกันเมื่อเครือข่ายช้า คำสั่งเก่าจึงถูกส่งไปหลังจากปล่อยปุ่มแล้ว
+8. **P8** L298N ใช้ทรานซิสเตอร์ BJT ซึ่งมีแรงดันตกคร่อมประมาณ 2 V มอเตอร์จึงหมุนช้าลงและ driver มีความร้อนสูง
+9. **P9** FreeRTOS บน AVR ใช้ Watchdog Timer เป็นตัวสร้าง tick Arduino Mega จึงไม่มีกลไกรีเซ็ตเมื่อโปรแกรมค้าง
 
 ## 8.3 วิธีที่ใช้แก้ไขและเหตุผลที่เลือกวิธีนั้น
 
@@ -1834,25 +1739,23 @@ Raspberry Pi และสาย CAN พร้อม terminator]
    ทำให้ backend รองรับหลายรูปแบบโดยไม่กระทบรูปแบบเดิม
 5. **P5** กำหนดให้ task `CAN_RX` มี priority สูงสุด ปลุกด้วย semaphore จาก ISR และอ่านข้อความจนหมด buffer
    ทำให้ตอบสนองได้เร็วที่สุดโดยไม่ต้อง polling บ่อยครั้ง
-6. **P6** เปลี่ยนไปใช้ hardware I2C (ขา D20/D21) ร่วมกับ page buffer ทำให้ขาไม่ซ้ำกัน ทำงานเร็วกว่า
-   และใช้ RAM เพียง 128 ไบต์แทน 1 KB
-7. **P7** รอเป็นเวลา `ROBOT_SERIAL_BOOT_DELAY_S` เท่ากับ 2 s แล้วล้าง input buffer และคัดกรองข้อมูลด้วย prefix
+6. **P6** รอเป็นเวลา `ROBOT_SERIAL_BOOT_DELAY_S` เท่ากับ 2 s แล้วล้าง input buffer และคัดกรองข้อมูลด้วย prefix
    ซึ่งไม่ต้องแก้ไขฮาร์ดแวร์ เช่น การตัดสาย DTR
-8. **P8** ข้ามรอบการส่งเมื่อคำขอก่อนหน้ายังไม่ได้รับการตอบกลับ แต่ส่งคำสั่ง STOP เสมอ เนื่องจาก STOP เป็นคำสั่งสำคัญที่สุด
+7. **P7** ข้ามรอบการส่งเมื่อคำขอก่อนหน้ายังไม่ได้รับการตอบกลับ แต่ส่งคำสั่ง STOP เสมอ เนื่องจาก STOP เป็นคำสั่งสำคัญที่สุด
    และต้องไม่ถูกข้าม
-9. **P9** [วิธีแก้ไขที่ใช้จริง เช่น ติดตั้ง heatsink หรือปรับค่า PWM พร้อมเหตุผล]
-10. **P10** ใช้ timeout ของคำสั่งทดแทน เนื่องจาก tick ของ RTOS มีความสำคัญต่อการทำงานของระบบมากกว่า
+8. **P8** [วิธีแก้ไขที่ใช้จริง เช่น ติดตั้ง heatsink หรือปรับค่า PWM พร้อมเหตุผล]
+9. **P9** ใช้ timeout ของคำสั่งทดแทน เนื่องจาก tick ของ RTOS มีความสำคัญต่อการทำงานของระบบมากกว่า
     และเสนอให้พัฒนา software watchdog ในอนาคต
 
 ## 8.4 ผลหลังแก้ไขและปัญหาที่ยังเหลืออยู่
 
-ผลหลังการแก้ไขปัญหา P1–P8: [ยืนยันผลจากการทดสอบในบทที่ 7]
+ผลหลังการแก้ไขปัญหา P1–P7: [ยืนยันผลจากการทดสอบในบทที่ 7]
 
 ปัญหาที่ยังเหลืออยู่มีดังนี้
 
 1. เมื่อสัญญาณ CAN ขาดหาย ปั๊มยังเปิดอยู่ได้นานสูงสุด 30 s ซึ่งแก้ไขได้โดยปิด relay ในส่วน fail-safe ของ arm_controller
 2. คำสั่งแขนจากหน้าเว็บและจากจอยสติ๊กอาจชนกันบน CAN ID `0x101` ซึ่งต้องให้บอร์ดแขนเลือกแหล่งคำสั่งในลักษณะเดียวกับ Arduino Mega
-3. Arduino Mega ยังไม่มีกลไกป้องกันโปรแกรมค้าง (P10)
+3. Arduino Mega ยังไม่มีกลไกป้องกันโปรแกรมค้าง (P9)
 
 ---
 
@@ -1865,7 +1768,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 1. **หุ่นยนต์ฉีดพ่นที่ควบคุมจากระยะไกล** คณะผู้จัดทำพัฒนาหุ่นยนต์ล้อ Mecanum 4 ล้อ พร้อมปั๊มและหัวฉีด 3 แกน
    ที่ควบคุมได้ทั้งด้วยจอยสติ๊ก PS2 และหน้าเว็บ ผลที่ได้: [ ]
 2. **การสื่อสารระหว่างไมโครคอนโทรลเลอร์หลายบอร์ด** Arduino 4 บอร์ดสื่อสารกันบน CAN Bus 500 kbps ผ่าน MCP2515 (SPI)
-   ใช้ PCA9685 และจอ OLED ผ่าน I2C และสื่อสารกับ Raspberry Pi ผ่านโปรโตคอล serial ผลที่ได้: [ ]
+   ใช้ PCA9685 ผ่าน I2C และสื่อสารกับ Raspberry Pi ผ่านโปรโตคอล serial ผลที่ได้: [ ]
 3. **ระบบความปลอดภัย (fail-safe)** ระบบมี timeout ในทุกชั้น Watchdog Timer ปุ่ม E-STOP และการกดค้างเพื่อขับเคลื่อน
    ผลที่ได้: [ ]
 4. **เว็บแดชบอร์ด กล้อง และสถานะ** ระบบใช้ FastAPI และ SvelteKit บน Raspberry Pi 5 ส่งภาพแบบ MJPEG ตรวจจับทรงพุ่ม
@@ -1889,7 +1792,7 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 2. วัดระดับสารในถังด้วยเซนเซอร์อนาล็อก ซึ่งใช้ฟังก์ชัน `adc_read()` กับช่องอื่นได้ และแจ้งเตือนเมื่อแบตเตอรี่ต่ำบนหน้าเว็บ
 3. พัฒนาระบบนำทางตามแถวต้นอัตโนมัติ เช่น ตรวจจับแนวลำต้นด้วย `Canny` และ `HoughLinesP`
 4. ใช้ sleep mode แบบ Power-down ของ AVR และบันทึกสถิติการใช้งาน เช่น จำนวนครั้งที่เริ่มทำงานและเวลาเปิดปั๊มสะสม ลง EEPROM
-5. บันทึก telemetry และประวัติการฉีดพ่นลง MongoDB เพื่อเรียกดูย้อนหลัง
+5. บันทึก telemetry และประวัติการฉีดพ่นลงฐานข้อมูลเพื่อเรียกดูย้อนหลัง
 6. เปลี่ยน motor driver เป็นแบบ MOSFET เช่น TB6612 หรือ BTS7960 เพื่อลดความร้อนและแรงดันตกคร่อม
 
 ---
@@ -1902,11 +1805,10 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 4. NXP Semiconductors. *PCA9685 16-channel, 12-bit PWM Fm+ I2C-bus LED Controller Datasheet*.
 5. STMicroelectronics. *L298 Dual Full-Bridge Driver Datasheet*.
 6. FreeRTOS. *FreeRTOS Documentation: Tasks, Queues, Semaphores and Task Notifications*. และไลบรารี Arduino_FreeRTOS (feilipu)
-7. olikraus. *U8g2 Library Documentation*.
-8. OpenCV. *OpenCV Documentation*. (`VideoCapture`, `cvtColor`, `inRange`, `morphologyEx`, `findContours`, `imencode`)
-9. FastAPI. *FastAPI Documentation: WebSockets and StreamingResponse*.
-10. Svelte. *SvelteKit Documentation*.
-11. [แหล่งข้อมูลอื่นที่ใช้]
+7. OpenCV. *OpenCV Documentation*. (`VideoCapture`, `cvtColor`, `inRange`, `morphologyEx`, `findContours`, `imencode`)
+8. FastAPI. *FastAPI Documentation: WebSockets and StreamingResponse*.
+9. Svelte. *SvelteKit Documentation*.
+10. [แหล่งข้อมูลอื่นที่ใช้]
 
 ---
 
@@ -1931,9 +1833,8 @@ Raspberry Pi และสาย CAN พร้อม terminator]
 |         11 | ปั๊มน้ำ DC + หัวฉีด + สายยาง + ถัง  |   1 ชุด |                           `[ ]` |         `[ ]` |
 |         12 | USB Webcam                                                |          1 |                           `[ ]` |         `[ ]` |
 |         13 | แบตเตอรี่ + Step-down                            |    `[ ]` |                           `[ ]` |         `[ ]` |
-|         14 | จอ OLED SSD1306 128×64 (I2C)                           |          1 |                           `[ ]` |         `[ ]` |
-|         15 | Battery voltage sensor 0–25 V                            |          1 |                           `[ ]` |         `[ ]` |
-|         16 | โครงรถ / สายไฟ / อื่นๆ                    |    `[ ]` |                           `[ ]` |         `[ ]` |
+|         14 | Battery voltage sensor 0–25 V                            |          1 |                           `[ ]` |         `[ ]` |
+|         15 | โครงรถ / สายไฟ / อื่นๆ                    |    `[ ]` |                           `[ ]` |         `[ ]` |
 
 ## ภาคผนวก ข การวิเคราะห์ต้นทุน (NRE — Non-Recurring Engineering)
 
@@ -1964,7 +1865,7 @@ Non-Recurring Engineering (NRE) รวมประมาณ 65,450 บาท ต
 |          1 | ออกแบบระบบและวงจร                             | ออกแบบสถาปัตยกรรม 4 บอร์ด + Pi, เลือกอุปกรณ์, วางตาราง CAN ID, ตารางต่อขา, ระบบไฟ/แบตเตอรี่ + step-down |             30 |                       250 |            7,500 |
 |          2 | Firmware`can-sender` + `can_receiver`                      | อ่านจอยสติ๊ก PS2 ด้วย Software SPI, deadzone, ส่ง CAN heartbeat, USB↔CAN bridge, ตรวจรูปแบบคำสั่ง, serial override                     |             30 |                       250 |            7,500 |
 |          3 | Firmware`arm_controller`                                     | driver PCA9685 (I2C) เขียนเอง, เซอร์โวนุ่มนวล, INT0 และ Watchdog ระดับ register, software sleep                                              |             30 |                       250 |            7,500 |
-|          4 | Firmware`motor_controller_simplify`                          | ออกแบบ task FreeRTOS + queue/semaphore/notification, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, จอ OLED, telemetry MS1                          |             35 |                       250 |            8,750 |
+|          4 | Firmware`motor_controller_simplify`                          | ออกแบบ task FreeRTOS + queue/semaphore/notification, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, telemetry MS1                          |             35 |                       250 |            8,750 |
 |          5 | Backend บน Raspberry Pi                                      | FastAPI + WebSocket, thread อ่าน serial + checksum + reconnect, ตั้ง Wi-Fi AP, Docker deploy                                                                       |             30 |                       250 |            7,500 |
 |          6 | Computer Vision (OpenCV)                                       | อ่านกล้อง V4L2/MJPG, สตรีม MJPEG, ตรวจจับทรงพุ่ม (HSV mask + สัดส่วนพื้นที่), ปรับ threshold                                 |             25 |                       250 |            6,250 |
 |          7 | Frontend เว็บ                                              | หน้า control / monitor (SvelteKit), ปุ่มกดค้างเพื่อสั่ง (hold-to-drive), แสดง telemetry                                                         |             25 |                       250 |            6,250 |

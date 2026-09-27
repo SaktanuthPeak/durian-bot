@@ -9,7 +9,6 @@ flowchart LR
         JP["JPEG ล่าสุด<br/>+ CanopyResult"]
     end
     CFG[(".env / compose<br/>ค่าตั้ง")] -.-> PI
-    DB[("MongoDB (ไม่บังคับ)<br/>User")] -.-> PI
     SN -- "MS1 ทุก 100 ms" --> RS
     CAM["กล้อง"] --> JP
     RS -- "GET /v1/robot/status<br/>WS /v1/telemetry/ws" --> WEB["เว็บ"]

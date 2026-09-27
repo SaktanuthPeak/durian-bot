@@ -7,7 +7,6 @@
 Raspberry Pi / FastAPI ── USB Serial 115200 ── Mega 2560 (FreeRTOS)
                                                ├─ L298N ×2 ── มอเตอร์ Mecanum 4 ล้อ (analogWrite → ENA/ENB)
                                                ├─ battery module (A0, ADC)
-                                               ├─ OLED SSD1306 (D20/D21, hardware I2C)
                                                └─ MCP2515 ── CAN 500 kbps ─┬─ can-sender (จอย PS2)
                                                                            └─ arm_controller
 ```
@@ -15,10 +14,10 @@ Raspberry Pi / FastAPI ── USB Serial 115200 ── Mega 2560 (FreeRTOS)
 ## Upload
 
 - บอร์ด: `Arduino Mega or Mega 2560`
-- ไลบรารี: **Arduino_FreeRTOS_Library** (feilipu), **mcp_can** และ **U8g2** (olikraus) — ติดตั้งผ่าน Library Manager
+- ไลบรารี: **Arduino_FreeRTOS_Library** (feilipu), และ **mcp_can** — ติดตั้งผ่าน Library Manager
 
 ```bash
-arduino-cli lib install "FreeRTOS" "mcp_can" "U8g2"
+arduino-cli lib install "FreeRTOS" "mcp_can"
 arduino-cli compile --fqbn arduino:avr:mega .
 arduino-cli upload  --fqbn arduino:avr:mega -p /dev/ttyACM0 .
 ```
@@ -36,8 +35,6 @@ arduino-cli upload  --fqbn arduino:avr:mega -p /dev/ttyACM0 .
 | MCP2515 INT (ไม่บังคับ) | D2 (INT4) |
 | Battery module `S` (หรือ `+` ของตัวแบ่งแรงดัน) | A0 |
 | Battery module `−` | GND ร่วมกับ Mega |
-| OLED SSD1306 `SDA` / `SCL` | D20 / D21 (hardware I2C) |
-| OLED `VCC` / `GND` | 5V / GND |
 
 ถอด jumper ที่ ENA/ENB ของ L298N ก่อนต่อสาย PWM และดูข้อควรระวังเรื่องไฟเลี้ยงใน [README หลัก](../../README.md#-motor-driver-l298n)
 
@@ -61,20 +58,6 @@ Vbat = ADC × 5.0 / 1023 × (R1 + R2) / R2
 | --- | --- |
 | `motor_controller_simplify.ino` | task ทั้งหมด, protocol, ขับมอเตอร์ |
 | `battery_sensor.h/.cpp` | อ่านแบตด้วย ADC ระดับ register + moving average (โครงเดียวกับ `motor_controller_mega/battery_sensor.cpp`) |
-| `oled_display.h/.cpp` | จอ OLED ผ่าน U8g2 — ถ้าจอเป็น SH1106 ให้สลับบรรทัด constructor ในไฟล์ `.cpp` |
-
-### OLED
-
-ใช้จอ SSD1306 128×64 แบบ I2C (address 0x3C) ตัวเดียวกับ `receiver-canbus.ino`
-แต่ตัวอย่างเดิมใช้ software I2C บน D6/D7 ของ Uno ซึ่งบน Mega เป็นขา PWM ของ L298N จึงย้ายมาใช้ hardware I2C (D20/D21) ที่ 400 kHz
-
-```text
-DURIAN BOT   SRC:WEB     ← แหล่งคำสั่งที่คุมล้อ (WEB / JOY / ---)
-BAT: 12.05 V
-M: FWD                   ← คำสั่งล้อ
-A: PUMP ON               ← คำสั่งแขน/ปั๊ม
-PWM: 150/255             ← duty ที่ส่งให้ L298N
-```
 
 ## Tasks
 
@@ -84,7 +67,6 @@ PWM: 150/255             ← duty ที่ส่งให้ L298N
 | `CONTROL` | 2 | เจ้าของ state คำสั่งแต่ผู้เดียว — ดึงจาก queue, เลือกแหล่งคำสั่ง (serial ก่อน CAN), เช็ก timeout, ขับมอเตอร์ |
 | `SERIAL_RX` | 2 | อ่านบรรทัดคำสั่งจาก Pi ส่งเข้า `commandQueue` แล้วตอบ ACK/ERR |
 | `TELEMETRY` | 1 | อ่านแบต แล้วส่ง `MS1` ทุก 100 ms หรือทันทีเมื่อ `CONTROL` แจ้งผ่าน task notification |
-| `DISPLAY` | 1 | วาดจอ OLED ทุก 250 ms (task เดียวที่ใช้ I2C) |
 
 | RTOS object | ใช้ทำอะไร |
 | --- | --- |

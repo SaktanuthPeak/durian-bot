@@ -16,7 +16,7 @@ flowchart LR
 
     subgraph CAN["CAN Bus 500 kbps"]
         SENDER["Uno: can-sender<br/>อ่านจอย PS2"]
-        MEGA["Mega 2560 (FreeRTOS):<br/>motor_controller_simplify<br/>ขับมอเตอร์ 4 ล้อ + วัดแบต + จอ OLED"]
+        MEGA["Mega 2560 (FreeRTOS):<br/>motor_controller_simplify<br/>ขับมอเตอร์ 4 ล้อ + วัดแบต"]
         ARM["Uno: arm_controller<br/>PCA9685 เซอร์โว + relay ปั๊ม"]
     end
 

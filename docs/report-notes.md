@@ -23,7 +23,7 @@
 | Sleep mode | – | ⚠️ software | ⚠️ software | – | ยังไม่มี sleep mode ของ AVR จริง (Z.3) |
 | UART | debug | debug | ✅ protocol 2 ทาง | ✅ protocol 2 ทาง | ครบ |
 | SPI | ✅ bit-bang + MCP2515 | ✅ | ✅ | ✅ | ครบ |
-| I2C | – | ✅ driver เอง | ✅ | ✅ OLED (HW I2C) | ครบ |
+| I2C | – | ✅ driver เอง (PCA9685) | ✅ | – (ตัดจอ OLED ออกแล้ว) | ครบ |
 | RTOS | – | – | – | ✅ FreeRTOS 5 task | ครบ |
 | EEPROM | – | ❌ | – | – | ยังไม่มีในบอร์ดหลัก (Z.4) |
 | OpenCV | backend | | | | ✅ HSV mask + morphology + contour (ทรงพุ่ม) |

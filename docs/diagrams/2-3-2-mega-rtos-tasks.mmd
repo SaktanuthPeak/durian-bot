@@ -11,7 +11,5 @@ flowchart LR
     TEL -- "MS1 (serialTxMutex)" --> PI(["Raspberry Pi"])
     PI -- "CMD:..." --> SERRX
     CANRX <-. "canBusMutex" .-> CTRL
-    CTRL -- "snapshot" --> DISP["DISPLAY<br/>priority 1"]
-    DISP -- "I2C 400 kHz" --> OLED(["OLED SSD1306"])
     classDef default fill:#ffffff,stroke:#000000,color:#000000;
     linkStyle default stroke:#000000,color:#000000

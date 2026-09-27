@@ -11,7 +11,7 @@
 
 - 🚜 **ขับเคลื่อน 4 ล้อ Mecanum** — เดินหน้า/ถอย/สไลด์ซ้าย-ขวา/เฉียง/หมุนตัว ด้วย Arduino Mega 2560 + L298N 2 ตัว
 - 💧 **ระบบฉีดพ่น** — เปิด/ปิดปั๊มผ่าน relay และปรับมุมหัวฉีด 3 แกนด้วยเซอร์โว (PCA9685)
-- 🔋 **วัดแรงดันแบตเตอรี่** แสดงบนหน้า `/control` และจอ OLED บนตัวหุ่น
+- 🔋 **วัดแรงดันแบตเตอรี่** แสดงบนหน้า `/control`
 - 🎥 **กล้อง USB** สตรีมภาพสด (OpenCV → MJPEG) พร้อม **ตรวจจับทรงพุ่ม (canopy)** — วัดสัดส่วนใบสีเขียวในภาพ ขึ้น `READY` เมื่อหัวฉีดหันเข้าต้น
 - 🎮 **ควบคุมได้ 2 ทาง** — เว็บ (ปุ่มกดค้างบนหน้า `/control` → FastAPI → USB serial) หรือจอย PS2 (CAN bus) โดยคำสั่งจากเว็บมีสิทธิ์ก่อน
 - 🛑 **Fail-safe** — คำสั่งจากเว็บหมดอายุใน 1 วินาที, จากจอยหมดอายุใน 300 ms, ปุ่ม E-STOP ตัดทั้งล้อและปั๊ม
@@ -32,7 +32,6 @@ Arduino Mega 2560 (FreeRTOS) ── motor_controller_simplify
   ├─ L298N #1 ── มอเตอร์ล้อหน้าซ้าย / หน้าขวา
   ├─ L298N #2 ── มอเตอร์ล้อหลังซ้าย / หลังขวา
   ├─ A0 ◄── battery module
-  ├─ D20/D21 (I2C) ── จอ OLED SSD1306
   └─ MCP2515 ══ CAN bus 500 kbps ══╦═ arm_controller (UNO): เซอร์โวหัวฉีด (PCA9685) + relay ปั๊ม
                                     ╚═ can-sender (UNO): จอย PS2
 ```
@@ -52,7 +51,6 @@ Arduino Mega 2560 (FreeRTOS) ── motor_controller_simplify
 | PCA9685 + เซอร์โว | 1 + 3 | ปรับมุมหัวฉีด |
 | Relay 5V + ปั๊มน้ำ DC + หัวฉีด | 1 ชุด | ฉีดพ่น |
 | Battery voltage sensor (0–25 V, 30k/7.5k) | 1 | วัดแรงดันแบตเข้า A0 ของ Mega |
-| จอ OLED SSD1306 128×64 (I2C) | 1 | แสดงแบต / คำสั่งล้อ / คำสั่งแขน บนตัวหุ่น ต่อ D20 (SDA) / D21 (SCL) ของ Mega |
 | จอย PS2 ไร้สาย + receiver | 1 | บังคับในสวน |
 | USB webcam | 1 | ภาพสด |
 
@@ -150,7 +148,7 @@ print(f"{payload}*{ck:02X}")   # MS1,1,1,-1,0,12048,493,150,24,812*27
 
 | โฟลเดอร์ | รายละเอียด |
 | --- | --- |
-| [`backend/`](backend/README.md) | FastAPI + Beanie — telemetry hub, WebSocket, สั่งงานหุ่น, กล้อง, auth |
+| [`backend/`](backend/README.md) | FastAPI — telemetry hub, WebSocket, สั่งงานหุ่น, กล้อง |
 | [`frontend/`](frontend/README.md) | SvelteKit 2 / Svelte 5 + Tailwind v4 — operator console (`/`, `/control`, `/monitor`) |
 | [`firmware/`](firmware/README.md) | Arduino sketch ของแต่ละบอร์ด (ดูตารางด้านล่าง) |
 | `scripts/` | สคริปต์ deploy ไป Pi, ตั้งค่า Wi-Fi AP, อ่าน/debug CAN bus |
@@ -161,7 +159,7 @@ print(f"{payload}*{ck:02X}")   # MS1,1,1,-1,0,12048,493,150,24,812*27
 
 | Sketch | บอร์ด | หน้าที่ |
 | --- | --- | --- |
-| [`motor_controller_simplify/`](firmware/motor_controller_simplify/README.md) | Mega 2560 | **ที่ใช้อยู่ตอนนี้** (FreeRTOS) — ขับล้อผ่าน L298N จากคำสั่ง CAN (จอย) หรือ USB serial (เว็บ), ส่งต่อคำสั่งแขนเข้า CAN, วัดแบต, จอ OLED, ส่ง telemetry `MS1` |
+| [`motor_controller_simplify/`](firmware/motor_controller_simplify/README.md) | Mega 2560 | **ที่ใช้อยู่ตอนนี้** (FreeRTOS) — ขับล้อผ่าน L298N จากคำสั่ง CAN (จอย) หรือ USB serial (เว็บ), ส่งต่อคำสั่งแขนเข้า CAN, วัดแบต, ส่ง telemetry `MS1` |
 | `arm_controller/` | UNO | รับคำสั่งแขนจาก CAN — เซอร์โวหัวฉีด (PCA9685) และ relay ปั๊ม, มี Watchdog (Interrupt + Reset) / INT0 / Power-down sleep / EEPROM สถิติ |
 | `can-sender/` | UNO | อ่านจอย PS2 แล้วส่งคำสั่งเข้า CAN bus ทุก 50 ms |
 | [`motor_controller_mega/`](firmware/motor_controller_mega/README.md) | Mega 2560 | รุ่นเต็ม — มอเตอร์ + PID, encoder, battery, IR 4 ทิศ, telemetry `MC1` |
@@ -228,7 +226,7 @@ Pi 5 RAM 8 GB build image บนตัวเองได้เลย ไม่�
 เปิดโฟลเดอร์ sketch ใน Arduino IDE (ชื่อ `.ino` ต้องตรงกับชื่อโฟลเดอร์) แล้วเลือกบอร์ดให้ตรง หรือใช้ `arduino-cli`:
 
 ```bash
-arduino-cli lib install "FreeRTOS" "mcp_can" "U8g2"
+arduino-cli lib install "FreeRTOS" "mcp_can"
 cd firmware/motor_controller_simplify
 arduino-cli compile --fqbn arduino:avr:mega .
 arduino-cli upload  --fqbn arduino:avr:mega -p /dev/ttyACM0 .

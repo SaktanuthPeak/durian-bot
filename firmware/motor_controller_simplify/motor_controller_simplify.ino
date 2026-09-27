@@ -2,7 +2,7 @@
  * FreeRTOS CAN motor controller for Arduino Mega 2560, with a USB-Serial link
  * to the Raspberry Pi (FastAPI) at 115200 baud, 8N1, one ASCII line per frame.
  *
- * Required libraries: Arduino_FreeRTOS_Library (feilipu), mcp_can, U8g2.
+ * Required libraries: Arduino_FreeRTOS_Library (feilipu), mcp_can.
  *
  * Tasks (higher number = higher priority):
  *   CAN_RX     3  woken by the MCP2515 INT pin (ISR -> semaphore), or every tick
@@ -12,7 +12,6 @@
  *   SERIAL_RX  2  reads lines from the Pi and pushes commands into the queue
  *   TELEMETRY  1  reads the battery ADC and prints MS1 every 100 ms, or at once
  *                 when CONTROL notifies a change
- *   DISPLAY    1  redraws the SSD1306 OLED over hardware I2C every 250 ms
  *
  * Pi -> Mega commands (terminated by LF, CR ignored):
  *   CMD:MOTOR:<0..10>          drive the wheels directly
@@ -49,7 +48,6 @@
 #include <string.h>
 
 #include "battery_sensor.h"
-#include "oled_display.h"
 
 constexpr uint8_t M1_PWM = 5, M1_IN1 = 22, M1_IN2 = 23;
 constexpr uint8_t M2_PWM = 6, M2_IN1 = 24, M2_IN2 = 25;
@@ -67,14 +65,12 @@ constexpr uint8_t MOTOR_PWM = 150;
 
 static const TickType_t CONTROL_PERIOD = pdMS_TO_TICKS(20);
 static const TickType_t TELEMETRY_PERIOD = pdMS_TO_TICKS(100);
-static const TickType_t DISPLAY_PERIOD = pdMS_TO_TICKS(250);
 
 // Stack depth is in bytes on the AVR port. snprintf needs the most.
 constexpr uint16_t CAN_TASK_STACK = 256;
 constexpr uint16_t CONTROL_TASK_STACK = 256;
 constexpr uint16_t SERIAL_TASK_STACK = 320;
 constexpr uint16_t TELEMETRY_TASK_STACK = 448;
-constexpr uint16_t DISPLAY_TASK_STACK = 384;
 constexpr UBaseType_t COMMAND_QUEUE_LENGTH = 8;
 
 MCP_CAN CAN0(CAN_CS_PIN);
@@ -97,11 +93,10 @@ struct CommandEvent {
 };
 
 // Shared status under stateMutex: CONTROL writes the command fields,
-// TELEMETRY writes the battery, TELEMETRY and DISPLAY read everything.
+// TELEMETRY writes the battery and reads everything.
 struct ControlSnapshot {
   int8_t motor;
   int8_t arm;
-  CommandSource source;
   uint8_t pwm;
   unsigned long commandTime;  // millis() of the command driving the wheels
   BatterySample battery;
@@ -119,7 +114,7 @@ static SemaphoreHandle_t canBusMutex = nullptr;     // MCP2515 SPI access
 static SemaphoreHandle_t serialTxMutex = nullptr;   // whole lines on Serial
 static SemaphoreHandle_t stateMutex = nullptr;      // ControlSnapshot
 static TaskHandle_t telemetryTask = nullptr;
-static ControlSnapshot snapshot = {-1, -1, SOURCE_NONE, 0, 0, {0, 0}};
+static ControlSnapshot snapshot = {-1, -1, 0, 0, {0, 0}};
 
 bool validMotorCommand(long code) { return code >= STOP && code <= SPIN_RIGHT; }
 bool validArmCommand(long code) {
@@ -429,8 +424,6 @@ void taskControl(void *) {
     if (xSemaphoreTake(stateMutex, portMAX_DELAY) == pdTRUE) {
       snapshot.motor = motor;
       snapshot.arm = activeArm(state);
-      snapshot.source = state.serialMotorActive ? SOURCE_WEB
-                      : (state.canMotor >= 0 ? SOURCE_JOYSTICK : SOURCE_NONE);
       snapshot.pwm = motor > STOP ? MOTOR_PWM : 0;
       snapshot.commandTime = state.serialMotorActive ? state.serialMotorTime
                            : (state.canMotor >= 0 ? state.canMotorTime : now);
@@ -481,26 +474,6 @@ void taskTelemetry(void *) {
 }
 
 // ----------------------------------------------------------------------------
-// Task: DISPLAY — the only user of the I2C bus, so it needs no bus mutex
-// ----------------------------------------------------------------------------
-void taskDisplay(void *) {
-  TickType_t lastWake = xTaskGetTickCount();
-
-  for (;;) {
-    vTaskDelayUntil(&lastWake, DISPLAY_PERIOD);
-
-    ControlSnapshot copy;
-    if (xSemaphoreTake(stateMutex, portMAX_DELAY) != pdTRUE) continue;
-    copy = snapshot;
-    xSemaphoreGive(stateMutex);
-
-    // Draw outside the mutex: one frame takes ~25 ms of I2C traffic.
-    const DisplayData data = {copy.motor, copy.arm, copy.source, copy.pwm, copy.battery.millivolts};
-    oled_draw(data);
-  }
-}
-
-// ----------------------------------------------------------------------------
 // Setup: hardware init, then create the RTOS objects. The scheduler starts
 // after setup() returns and loop() becomes the idle task.
 // ----------------------------------------------------------------------------
@@ -529,7 +502,6 @@ void setup() {
   CAN0.setMode(MCP_NORMAL);
 
   battery_init();
-  oled_init();  // before the scheduler: U8g2 uses delay() while the panel boots
 
   commandQueue = xQueueCreate(COMMAND_QUEUE_LENGTH, sizeof(CommandEvent));
   canRxSemaphore = xSemaphoreCreateBinary();
@@ -548,8 +520,7 @@ void setup() {
     xTaskCreate(taskCanReceive, "CAN_RX", CAN_TASK_STACK, nullptr, 3, nullptr) == pdPASS &&
     xTaskCreate(taskControl, "CONTROL", CONTROL_TASK_STACK, nullptr, 2, nullptr) == pdPASS &&
     xTaskCreate(taskSerialReceive, "SERIAL_RX", SERIAL_TASK_STACK, nullptr, 2, nullptr) == pdPASS &&
-    xTaskCreate(taskTelemetry, "TELEMETRY", TELEMETRY_TASK_STACK, nullptr, 1, &telemetryTask) == pdPASS &&
-    xTaskCreate(taskDisplay, "DISPLAY", DISPLAY_TASK_STACK, nullptr, 1, nullptr) == pdPASS;
+    xTaskCreate(taskTelemetry, "TELEMETRY", TELEMETRY_TASK_STACK, nullptr, 1, &telemetryTask) == pdPASS;
   if (!created) halt(F("{\"t\":\"ERR\",\"error\":\"RTOS_TASKS\"}"));
 }
 
