@@ -102,6 +102,25 @@ struct ControlSnapshot {
   BatterySample battery;
 };
 
+// Private to the CONTROL task; no other task touches it. Defined up here so
+// the Arduino-generated prototypes that take ControlState& can see it.
+struct ControlState {
+  int8_t canMotor = -1;
+  unsigned long canMotorTime = 0;
+  int8_t canArm = -1;
+  unsigned long canArmTime = 0;
+
+  int8_t serialMotor = STOP;
+  bool serialMotorActive = false;
+  unsigned long serialMotorTime = 0;
+  int8_t serialArm = STOP;
+  bool serialArmActive = false;
+  unsigned long serialArmTime = 0;
+  unsigned long armTxTime = 0;
+
+  int8_t appliedMotor = -1;
+};
+
 struct MotorPins { uint8_t pwm, in1, in2; };
 const MotorPins motors[] = {
   {M1_PWM, M1_IN1, M1_IN2}, {M2_PWM, M2_IN1, M2_IN2},
@@ -303,25 +322,8 @@ void taskSerialReceive(void *) {
 }
 
 // ----------------------------------------------------------------------------
-// Task: CONTROL (owns every variable below; no other task touches them)
+// Task: CONTROL (owns its ControlState; no other task touches it)
 // ----------------------------------------------------------------------------
-struct ControlState {
-  int8_t canMotor = -1;
-  unsigned long canMotorTime = 0;
-  int8_t canArm = -1;
-  unsigned long canArmTime = 0;
-
-  int8_t serialMotor = STOP;
-  bool serialMotorActive = false;
-  unsigned long serialMotorTime = 0;
-  int8_t serialArm = STOP;
-  bool serialArmActive = false;
-  unsigned long serialArmTime = 0;
-  unsigned long armTxTime = 0;
-
-  int8_t appliedMotor = -1;
-};
-
 // Serial beats CAN: the joystick keeps sending STOP heartbeats, which would
 // otherwise cancel every web command within 50 ms.
 int8_t activeMotor(const ControlState &s) {

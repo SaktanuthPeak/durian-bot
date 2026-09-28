@@ -11,12 +11,10 @@
 	import { cameraStore } from '../camera.svelte';
 
 	interface Props {
-		strongestDirection?: string | null;
-		bearingDeg?: number | null;
 		compact?: boolean;
 	}
 
-	let { strongestDirection = null, bearingDeg = null, compact = false }: Props = $props();
+	let { compact = false }: Props = $props();
 
 	$effect(() => {
 		cameraStore.start();
@@ -89,6 +87,6 @@
 		</div>
 	</CardHeader>
 	<CardContent class={compact ? 'p-2 pt-0' : 'p-3 pt-0'}>
-		<CameraViewport {strongestDirection} {bearingDeg} {compact} />
+		<CameraViewport {compact} />
 	</CardContent>
 </Card>

@@ -235,16 +235,16 @@ Raspberry Pi เชื่อมต่อกับบอร์ดควบคุ�
 
 **ตารางที่ 2.3** การต่อขาของบอร์ดควบคุมมอเตอร์ (Arduino Mega 2560)
 
-| อุปกรณ์                            | ขา L298N         | ขา Mega             | หมายเหตุ                   |
-| ----------------------------------------- | ------------------ | --------------------- | ---------------------------------- |
-| L298N#1 ช่อง A → M1 หน้าซ้าย | ENA / IN1 / IN2    | D5 / D22 / D23        | ENA = PWM (Timer3)                 |
-| L298N#1 ช่อง B → M2 หน้าขวา   | ENB / IN3 / IN4    | D6 / D24 / D25        | ENB = PWM (Timer4)                 |
-| L298N#2 ช่อง A → M3 หลังซ้าย | ENA / IN1 / IN2    | D7 / D30 / D31        | ENA = PWM (Timer4)                 |
-| L298N#2 ช่อง B → M4 หลังขวา   | ENB / IN3 / IN4    | D8 / D32 / D33        | ENB = PWM (Timer4)                 |
-| L298N ทั้ง 2 บอร์ด               | GND                | GND                   | ต้องต่อ GND ร่วม        |
-| MCP2515                                   | CS / SO / SI / SCK | D53 / D50 / D51 / D52 | SPI                                |
-| MCP2515 INT (ไม่บังคับ)          | –                 | D2 (INT4)             | ปลุก task CAN_RX               |
-| Battery module S                          | –                 | A0                    | GND ร่วม                       |
+| อุปกรณ์                            | ขา L298N         | ขา Mega             | หมายเหตุ            |
+| ----------------------------------------- | ------------------ | --------------------- | --------------------------- |
+| L298N#1 ช่อง A → M1 หน้าซ้าย | ENA / IN1 / IN2    | D5 / D22 / D23        | ENA = PWM (Timer3)          |
+| L298N#1 ช่อง B → M2 หน้าขวา   | ENB / IN3 / IN4    | D6 / D24 / D25        | ENB = PWM (Timer4)          |
+| L298N#2 ช่อง A → M3 หลังซ้าย | ENA / IN1 / IN2    | D7 / D30 / D31        | ENA = PWM (Timer4)          |
+| L298N#2 ช่อง B → M4 หลังขวา   | ENB / IN3 / IN4    | D8 / D32 / D33        | ENB = PWM (Timer4)          |
+| L298N ทั้ง 2 บอร์ด               | GND                | GND                   | ต้องต่อ GND ร่วม |
+| MCP2515                                   | CS / SO / SI / SCK | D53 / D50 / D51 / D52 | SPI                         |
+| MCP2515 INT (ไม่บังคับ)          | –                 | D2 (INT4)             | ปลุก task CAN_RX        |
+| Battery module S                          | –                 | A0                    | GND ร่วม                |
 
 ตำแหน่งของล้อกำหนดตามตารางทิศทางการหมุน โดยคำสั่ง SPIN_LEFT ให้ล้อ M1 และ M3 หมุนถอยหลัง ส่วนล้อ M2 และ M4
 หมุนไปข้างหน้า หากล้อใดหมุนกลับทิศ สามารถแก้ไขได้โดยสลับสาย OUT1 และ OUT2 ที่ L298N
@@ -1068,13 +1068,13 @@ L298N ใช้ทรานซิสเตอร์ BJT จึงมีแรง
 
 #### ADC (Analog to Digital Converter)
 
-ADC ของ AVR เป็นแบบ successive approximation ความละเอียด 10 บิต (0–1023) เลือกช่องด้วย `ADMUX` เริ่มแปลงค่าด้วย `ADSC`
-ใน `ADCSRA` และรอจน `ADSC` กลับเป็น 0 สัญญาณนาฬิกาของ ADC ต้องอยู่ในช่วง 50–200 kHz จึงใช้ 16 MHz / 128 = 125 kHz
-ซึ่งการแปลง 1 ครั้งใช้ประมาณ 13 clock หรือ 104 µs แรงดันคำนวณจาก `V = ADC × Vref / 1023` และวัดแบตเตอรี่ผ่านวงจรแบ่งแรงดัน
-ด้วย `Vbat = V × (R1 + R2) / R2`
+ADC ของ AVR มีความละเอียด 10 บิต แปลงแรงดัน 0–5 V ที่ขาอนาล็อกเป็นค่า 0–1023 โดย Arduino อ่านค่าได้ด้วยฟังก์ชัน
+`analogRead()` แรงดันที่ขาคำนวณจาก `V = ADC × Vref / 1023` และเมื่อวัดแบตเตอรี่ผ่านวงจรแบ่งแรงดัน
+แรงดันแบตเตอรี่คำนวณจาก `Vbat = V × (R1 + R2) / R2`
 
-ในโครงงาน บอร์ดควบคุมมอเตอร์อ่านโมดูลวัดแรงดันแบตเตอรี่ 0–25 V (30 kΩ / 7.5 kΩ) ที่ขา `A0` โดยเขียนโปรแกรมระดับ register
-แทน `analogRead()` แล้วเฉลี่ย 8 ค่า (moving average) เพื่อลดสัญญาณรบกวนจากมอเตอร์ และส่งค่าขึ้นหน้าเว็บใน telemetry `MS1`
+ในโครงงาน บอร์ดควบคุมมอเตอร์ต่อขา S ของโมดูลวัดแรงดัน 0–25 V (30 kΩ / 7.5 kΩ ซึ่งลดแรงดันลง 5 เท่า) เข้ากับขา `A0`
+อ่านค่าด้วย `analogRead()` แล้วคูณด้วย 5 เพื่อให้ได้แรงดันแบตเตอรี่ และเฉลี่ย 8 ค่าล่าสุด (moving average)
+เพื่อลดสัญญาณรบกวนจากมอเตอร์ จากนั้นส่งค่าขึ้นหน้าเว็บใน telemetry `MS1`
 
 ### 3.6.2 การสร้าง RTOS objects และ task
 
@@ -1236,38 +1236,39 @@ void applyCommand(uint8_t command) {
 }
 ```
 
-### 3.6.7 การอ่านแรงดันแบตเตอรี่ด้วย ADC ระดับ register และ Moving Average
+### 3.6.7 การอ่านแรงดันแบตเตอรี่ด้วย analogRead และ Moving Average
 
-ไฟล์ `battery_sensor.cpp` พัฒนาต่อจาก `firmware/motor_controller_mega/battery_sensor.cpp` โดยคงรูปแบบ API
-`battery_init()` และ `battery_read()` ที่คืนค่าเป็น `BatterySample` และใช้ค่าตัวแบ่งแรงดัน 30k/7.5k, Vref 5 V และตัวหาร 1023
-เช่นเดิม แต่เปลี่ยนจาก `analogRead()` เป็นการเขียน register โดยตรง และเพิ่ม moving average
+ไฟล์ `battery_sensor.cpp` มีฟังก์ชัน `battery_init()` และ `battery_read()` ซึ่งคืนค่าเป็น `BatterySample`
+ที่มีทั้งค่า ADC และแรงดันแบตเตอรี่ในหน่วยมิลลิโวลต์
 
 ```cpp
-uint16_t adc_read(uint8_t channel) {
-  ADMUX = (1 << REFS0) | (channel & 0x07);             // Vref = AVCC, เลือกช่อง 0..7
-  ADCSRB &= ~(1 << MUX5);                              // MUX5 = 0 → A0..A7
-  ADCSRA = (1 << ADEN) | (1 << ADSC)                   // เปิด ADC + เริ่มแปลง
-         | (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // prescaler 128 → 125 kHz
-  while (ADCSRA & (1 << ADSC)) {}                      // รอ ~104 µs
-  return ADC;
-}
+// battery_sensor.h
+constexpr uint8_t BATTERY_PIN = A0;              // ขา S ของโมดูลวัดแรงดัน
+constexpr float BATTERY_DIVIDER_RATIO = 5.0f;    // (30k + 7.5k) / 7.5k
+constexpr float ADC_REFERENCE_VOLTAGE = 5.0f;
+constexpr float ADC_COUNTS = 1023.0f;
+constexpr uint8_t BATTERY_SAMPLES = 8;           // จำนวนค่าที่นำมาเฉลี่ย
 
-BatterySample battery_read() {
-  samples[sampleIndex] = adc_read(BATTERY_ADC_CHANNEL);        // เฉลี่ย 8 ค่าล่าสุด (ring buffer)
-  sampleIndex = (sampleIndex + 1) % BATTERY_SAMPLES;
-  if (sampleCount < BATTERY_SAMPLES) sampleCount++;
-  uint32_t sum = 0;
-  for (uint8_t i = 0; i < sampleCount; i++) sum += samples[i];
-  const uint16_t adc = static_cast<uint16_t>(sum / sampleCount);
+// battery_sensor.cpp
+BatterySample battery_read()
+{
+    samples[sampleIndex] = analogRead(BATTERY_PIN);          // เก็บค่าล่าสุดลง ring buffer
+    sampleIndex = (sampleIndex + 1) % BATTERY_SAMPLES;
+    if (sampleCount < BATTERY_SAMPLES) sampleCount++;
 
-  const float moduleVoltage = (static_cast<float>(adc) * ADC_REFERENCE_VOLTAGE) / ADC_COUNTS;
-  const float batteryVoltage = moduleVoltage * ((BATTERY_R1_OHMS + BATTERY_R2_OHMS) / BATTERY_R2_OHMS);
-  return BatterySample{adc, static_cast<uint32_t>(batteryVoltage * 1000.0f + 0.5f)};
+    uint32_t sum = 0;
+    for (uint8_t i = 0; i < sampleCount; i++) sum += samples[i];
+    const uint16_t adc = sum / sampleCount;                  // ค่าเฉลี่ย 8 ค่าล่าสุด
+
+    const float pinVoltage = adc * ADC_REFERENCE_VOLTAGE / ADC_COUNTS;   // 0..5 V ที่ขา S
+    const float batteryVoltage = pinVoltage * BATTERY_DIVIDER_RATIO;     // คูณ 5 กลับเป็นแรงดันแบตเตอรี่
+
+    return BatterySample{adc, (uint32_t)(batteryVoltage * 1000.0f + 0.5f)};
 }
 ```
 
-ตัวอย่างการคำนวณ เมื่อ ADC = 493 จะได้ 493 × 5 / 1023 = 2.410 V ที่ขา A0 และเมื่อคูณด้วย (30k + 7.5k) / 7.5k
-จะได้แรงดันแบตเตอรี่ 12.05 V
+ตัวอย่างการคำนวณ เมื่อค่าเฉลี่ยของ `analogRead()` เท่ากับ 493 จะได้ 493 × 5 / 1023 = 2.410 V ที่ขา A0
+และเมื่อคูณด้วย 5 จะได้แรงดันแบตเตอรี่ 12.05 V
 
 ### 3.6.8 Task TELEMETRY: Task Notification และ MS1
 
@@ -1571,7 +1572,7 @@ slow-motion สคริปต์ `scripts/read_receiver_canbus.py` และเ
 | T05      | Serial timeout                 | ถอด USB ขณะสั่งจากเว็บ                                           | หยุดใน 1 s                                                                                |
 | T06      | กดค้างบนเว็บ       | กดปุ่ม ↑ ค้าง 5 s แล้วปล่อย                                   | เดินต่อเนื่อง หยุดทันทีที่ปล่อย                                   |
 | T07      | E-STOP                         | กด E-STOP ขณะเดินและปั๊มเปิด                                  | ล้อหยุดและปั๊มปิดทันที                                                    |
-| T08      | Watchdog                       | ใส่`while(1);` ทดสอบในบอร์ดควบคุมแขนหุ่นยนต์                                 | บอร์ด reset ใน 0.5 s, ปั๊มปิด, เซอร์โวกลับตำแหน่งปลอดภัย |
+| T08      | Watchdog                       | ใส่`while(1);` ทดสอบในบอร์ดควบคุมแขนหุ่นยนต์    | บอร์ด reset ใน 0.5 s, ปั๊มปิด, เซอร์โวกลับตำแหน่งปลอดภัย |
 | T09      | Software sleep                 | ปล่อยจอยสติ๊ก 30 s                                                   | ปั๊มปิด แขนหยุด, ขยับจอยสติ๊กแล้วกลับมาทำงาน           |
 | T10      | ค่าแบตเตอรี่       | เทียบกับมัลติมิเตอร์                                          | คลาดเคลื่อน ≤`[x]` % หลังปรับเทียบ                                   |
 | T11      | OpenCV                         | หันกล้องเข้าพุ่มไม้ / พื้นดิน                           | ขึ้น`CANOPY xx% READY` / ไม่ขึ้น READY                                             |
@@ -1876,10 +1877,10 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 **สรุป** ได้ประโยชน์ด้านความปลอดภัย แต่ยังไม่ได้ประโยชน์ด้านพลังงาน ควรพัฒนาเป็น Power-down ที่ปลุกด้วย INT0 แบบ low level
 
-### 5.2.6 ADC ระดับ register และ Moving Average
+### 5.2.6 การวัดแรงดันแบตเตอรี่ด้วย analogRead และ Moving Average
 
-**เหตุผลที่เลือกใช้** เพื่อควบคุม ADC ผ่าน register `ADMUX` และ `ADCSRA` โดยตรง กำหนด prescaler ให้ได้สัญญาณนาฬิกา 125 kHz
-และใช้ค่าเฉลี่ยเคลื่อนที่ลดสัญญาณรบกวนจากมอเตอร์
+**เหตุผลที่เลือกใช้** `analogRead()` เป็นฟังก์ชันมาตรฐานของ Arduino ที่อ่านง่ายและเพียงพอสำหรับการวัดแรงดันแบตเตอรี่
+ซึ่งเปลี่ยนแปลงช้า ส่วนค่าเฉลี่ยเคลื่อนที่ช่วยลดสัญญาณรบกวนจากมอเตอร์
 
 **ผลที่ได้** วัดแรงดันแบตเตอรี่ได้ละเอียดประมาณ 24 mV และค่าที่แสดงมีเสถียรภาพจากการเฉลี่ย 8 ค่า
 ความคลาดเคลื่อนหลังปรับเทียบ: [ ] % (ตารางที่ 4.2)
@@ -2016,7 +2017,7 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 1. พัฒนาการฉีดพ่นเฉพาะจุด (spot spraying) โดยเปิดปั๊มอัตโนมัติเมื่อ OpenCV ตรวจพบทรงพุ่ม เพื่อลดการใช้สาร
    ทั้งนี้ต้องมีปุ่ม E-STOP และโหมดควบคุมด้วยมือ (manual override) ควบคู่กัน
-2. วัดระดับสารในถังด้วยเซนเซอร์อนาล็อก ซึ่งใช้ฟังก์ชัน `adc_read()` กับช่องอื่นได้ และแจ้งเตือนเมื่อแบตเตอรี่ต่ำบนหน้าเว็บ
+2. วัดระดับสารในถังด้วยเซนเซอร์อนาล็อก ซึ่งอ่านด้วย `analogRead()` ที่ขาอนาล็อกอื่นได้ และแจ้งเตือนเมื่อแบตเตอรี่ต่ำบนหน้าเว็บ
 3. พัฒนาระบบนำทางตามแถวต้นอัตโนมัติ เช่น ตรวจจับแนวลำต้นด้วย `Canny` และ `HoughLinesP`
 4. ใช้ sleep mode แบบ Power-down ของ AVR และบันทึกสถิติการใช้งาน เช่น จำนวนครั้งที่เริ่มทำงานและเวลาเปิดปั๊มสะสม ลง EEPROM
 5. บันทึก telemetry และประวัติการฉีดพ่นลงฐานข้อมูลเพื่อเรียกดูย้อนหลัง
@@ -2047,10 +2048,10 @@ task `CONTROL` เป็นผู้แก้ไขสถานะเพีย�
 
 | ลำดับ | รายการ                                              | จำนวน | ราคาต่อหน่วย (บาท) | รวม (บาท) |
 | ---------: | --------------------------------------------------------- | ---------: | --------------------------------: | --------------: |
-|          1 | Arduino Uno R3                                            |         2 |                           `[ ]` |         `[ ]` |
+|          1 | Arduino Uno R3                                            |          2 |                           `[ ]` |         `[ ]` |
 |          2 | Arduino Mega 2560                                         |          1 |                           `[ ]` |         `[ ]` |
 |          3 | Raspberry Pi 5 (RAM 8 GB) + adapter USB-C 5V 5A + microSD |          1 |                           `[ ]` |         `[ ]` |
-|          4 | MCP2515 CAN Module                                        |         3 |                           `[ ]` |         `[ ]` |
+|          4 | MCP2515 CAN Module                                        |          3 |                           `[ ]` |         `[ ]` |
 |          5 | PCA9685 16-ch PWM                                         |          1 |                           `[ ]` |         `[ ]` |
 |          6 | Servo Motor                                               |          3 |                           `[ ]` |         `[ ]` |
 |          7 | จอยสติ๊ก PS2 ไร้สาย + receiver              |          1 |                           `[ ]` |         `[ ]` |
@@ -2087,21 +2088,21 @@ Non-Recurring Engineering (NRE) รวมประมาณ 65,450 บาท ต
 
 **ตารางที่ ข.1** รายละเอียดต้นทุน NRE รวม 65,450 บาท
 
-| ลำดับ | รายการ NRE                                               | งานที่ทำ                                                                                                                                                           | ชั่วโมง | อัตรา (บาท/ชม.) |  รวม (บาท) |
-| ---------: | -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------: | ------------------------: | ---------------: |
-|          1 | ออกแบบระบบและวงจร                             | ออกแบบสถาปัตยกรรม 3 บอร์ด + Pi, เลือกอุปกรณ์, วางตาราง CAN ID, ตารางต่อขา, ระบบไฟ/แบตเตอรี่ + step-down |             30 |                       250 |            7,500 |
-|          2 | Firmware บอร์ดรับค่าจากรีโมต                      | อ่านจอยสติ๊ก PS2 ด้วย Software SPI, deadzone, ส่ง CAN heartbeat                     |             30 |                       250 |            7,500 |
-|          3 | Firmware บอร์ดควบคุมแขนหุ่นยนต์                                     | driver PCA9685 (I2C) เขียนเอง, เซอร์โวนุ่มนวล, INT0 และ Watchdog ระดับ register, software sleep                                              |             30 |                       250 |            7,500 |
-|          4 | Firmware บอร์ดควบคุมมอเตอร์                          | ออกแบบ task FreeRTOS + queue/semaphore/notification, รับและตรวจสอบคำสั่ง serial, serial override, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, telemetry MS1                          |             35 |                       250 |            8,750 |
-|          5 | Backend บน Raspberry Pi                                      | FastAPI + WebSocket, thread อ่าน serial + checksum + reconnect, ตั้ง Wi-Fi AP, Docker deploy                                                                       |             30 |                       250 |            7,500 |
-|          6 | Computer Vision (OpenCV)                                       | อ่านกล้อง V4L2/MJPG, สตรีม MJPEG, ตรวจจับทรงพุ่ม (HSV mask + สัดส่วนพื้นที่), ปรับ threshold                                 |             25 |                       250 |            6,250 |
-|          7 | Frontend เว็บ                                              | หน้า control / monitor (SvelteKit), ปุ่มกดค้างเพื่อสั่ง (hold-to-drive), แสดง telemetry                                                         |             25 |                       250 |            6,250 |
-|          8 | โครงสร้างเครื่องกล / Prototype               | ยึดมอเตอร์ + ล้อ Mecanum, ขาจับหัวฉีด 3 แกน, ติดตั้งถัง ปั๊ม สายยาง, จัดวางบอร์ดและสายไฟ                 |             20 |                       200 |            4,000 |
-|          9 | ประกอบวงจรและทดสอบต้นแบบ               | เดินสาย CAN + terminator, debug hardware/software, ทดสอบตามบทที่ 4                                                                                     |             25 |                       200 |            5,000 |
-|         10 | จัดทำเอกสารและแผนการทดสอบ             | เขียนรายงาน, แผนภาพ, คู่มือการใช้งาน, ออกแบบ test case                                                                               |             16 |                       200 |            3,200 |
-|         11 | อุปกรณ์ทดลอง / อะไหล่ (ครั้งเดียว) | โมดูลที่เสียระหว่างทดลอง (เช่น MCP2515, เซอร์โว, L298N), สายจั๊มเปอร์, breadboard, วัสดุทดลองโครงรถ         |             – |                        – |            2,000 |
-|         12 | ซอฟต์แวร์ / ลิขสิทธิ์ (ครั้งเดียว) | Arduino IDE, FreeRTOS, OpenCV, FastAPI, SvelteKit, Docker เป็น open-source ทั้งหมด                                                                              |             – |                        – |                0 |
-|            | **รวม**                                               |                                                                                                                                                                            |  **266** |                           | **65,450** |
+| ลำดับ | รายการ NRE                                               | งานที่ทำ                                                                                                                                                                                       | ชั่วโมง | อัตรา (บาท/ชม.) |  รวม (บาท) |
+| ---------: | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------: | ------------------------: | ---------------: |
+|          1 | ออกแบบระบบและวงจร                             | ออกแบบสถาปัตยกรรม 3 บอร์ด + Pi, เลือกอุปกรณ์, วางตาราง CAN ID, ตารางต่อขา, ระบบไฟ/แบตเตอรี่ + step-down                             |             30 |                       250 |            7,500 |
+|          2 | Firmware บอร์ดรับค่าจากรีโมต                | อ่านจอยสติ๊ก PS2 ด้วย Software SPI, deadzone, ส่ง CAN heartbeat                                                                                                                     |             30 |                       250 |            7,500 |
+|          3 | Firmware บอร์ดควบคุมแขนหุ่นยนต์          | driver PCA9685 (I2C) เขียนเอง, เซอร์โวนุ่มนวล, INT0 และ Watchdog ระดับ register, software sleep                                                                          |             30 |                       250 |            7,500 |
+|          4 | Firmware บอร์ดควบคุมมอเตอร์                  | ออกแบบ task FreeRTOS + queue/semaphore/notification, รับและตรวจสอบคำสั่ง serial, serial override, ตารางทิศทาง Mecanum + PWM, ADC แบตเตอรี่, telemetry MS1 |             35 |                       250 |            8,750 |
+|          5 | Backend บน Raspberry Pi                                      | FastAPI + WebSocket, thread อ่าน serial + checksum + reconnect, ตั้ง Wi-Fi AP, Docker deploy                                                                                                   |             30 |                       250 |            7,500 |
+|          6 | Computer Vision (OpenCV)                                       | อ่านกล้อง V4L2/MJPG, สตรีม MJPEG, ตรวจจับทรงพุ่ม (HSV mask + สัดส่วนพื้นที่), ปรับ threshold                                                             |             25 |                       250 |            6,250 |
+|          7 | Frontend เว็บ                                              | หน้า control / monitor (SvelteKit), ปุ่มกดค้างเพื่อสั่ง (hold-to-drive), แสดง telemetry                                                                                     |             25 |                       250 |            6,250 |
+|          8 | โครงสร้างเครื่องกล / Prototype               | ยึดมอเตอร์ + ล้อ Mecanum, ขาจับหัวฉีด 3 แกน, ติดตั้งถัง ปั๊ม สายยาง, จัดวางบอร์ดและสายไฟ                                             |             20 |                       200 |            4,000 |
+|          9 | ประกอบวงจรและทดสอบต้นแบบ               | เดินสาย CAN + terminator, debug hardware/software, ทดสอบตามบทที่ 4                                                                                                                 |             25 |                       200 |            5,000 |
+|         10 | จัดทำเอกสารและแผนการทดสอบ             | เขียนรายงาน, แผนภาพ, คู่มือการใช้งาน, ออกแบบ test case                                                                                                           |             16 |                       200 |            3,200 |
+|         11 | อุปกรณ์ทดลอง / อะไหล่ (ครั้งเดียว) | โมดูลที่เสียระหว่างทดลอง (เช่น MCP2515, เซอร์โว, L298N), สายจั๊มเปอร์, breadboard, วัสดุทดลองโครงรถ                                     |             – |                        – |            2,000 |
+|         12 | ซอฟต์แวร์ / ลิขสิทธิ์ (ครั้งเดียว) | Arduino IDE, FreeRTOS, OpenCV, FastAPI, SvelteKit, Docker เป็น open-source ทั้งหมด                                                                                                          |             – |                        – |                0 |
+|            | **รวม**                                               |                                                                                                                                                                                                        |  **266** |                           | **65,450** |
 
 ### ข.2 ต้นทุนต่อเครื่องเมื่อผลิตจำนวนมาก
 

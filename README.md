@@ -160,6 +160,7 @@ print(f"{payload}*{ck:02X}")   # MS1,1,1,-1,0,12048,493,150,24,812*27
 | Sketch | บอร์ด | หน้าที่ |
 | --- | --- | --- |
 | [`motor_controller_simplify/`](firmware/motor_controller_simplify/README.md) | Mega 2560 | **ที่ใช้อยู่ตอนนี้** (FreeRTOS) — ขับล้อผ่าน L298N จากคำสั่ง CAN (จอย) หรือ USB serial (เว็บ), ส่งต่อคำสั่งแขนเข้า CAN, วัดแบต, ส่ง telemetry `MS1` |
+| [`motor_controller_superloop/`](firmware/motor_controller_superloop/README.md) | Mega 2560 | ทางเลือกแบบไม่มี RTOS (super loop + `millis()`) — ต่อขาและ protocol เหมือน `motor_controller_simplify`, วัดแบตด้วย `analogRead()`, เปิด Watchdog 500 ms |
 | `arm_controller/` | UNO | รับคำสั่งแขนจาก CAN — เซอร์โวหัวฉีด (PCA9685) และ relay ปั๊ม, มี Watchdog (Interrupt + Reset) / INT0 / Power-down sleep / EEPROM สถิติ |
 | `can-sender/` | UNO | อ่านจอย PS2 แล้วส่งคำสั่งเข้า CAN bus ทุก 50 ms |
 | [`motor_controller_mega/`](firmware/motor_controller_mega/README.md) | Mega 2560 | รุ่นเต็ม — มอเตอร์ + PID, encoder, battery, IR 4 ทิศ, telemetry `MC1` |

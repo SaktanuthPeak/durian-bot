@@ -43,21 +43,21 @@ arduino-cli upload  --fqbn arduino:avr:mega -p /dev/ttyACM0 .
 
 ### Battery
 
-ค่า default ตั้งไว้สำหรับโมดูล voltage sensor 0–25 V (ตัวแบ่ง 30 kΩ / 7.5 kΩ, อัตราส่วน 5:1)
-ถ้าใช้ตัวต้านทานค่าอื่นให้แก้ `BATTERY_R1_OHMS` / `BATTERY_R2_OHMS` ในหัวไฟล์ `.ino`
+ใช้โมดูลวัดแรงดัน 0–25 V (ตัวแบ่ง 30 kΩ / 7.5 kΩ ลดแรงดันลง 5 เท่า) ต่อขา `S` เข้า A0, `−` เข้า GND ร่วมกับ Mega
 
 ```text
-Vbat = ADC × 5.0 / 1023 × (R1 + R2) / R2
+Vbat = analogRead(A0) × 5.0 / 1023 × 5
 ```
 
-อ่านค่าด้วย register (`ADMUX`, `ADCSRA`) และเฉลี่ย 8 ค่าล่าสุด (moving average) เพื่อลด noise จากมอเตอร์
+อ่านด้วย `analogRead()` แล้วเฉลี่ย 8 ค่าล่าสุด (moving average) เพื่อลด noise จากมอเตอร์
+ถ้าค่าบนเว็บไม่ตรงกับมัลติมิเตอร์ ให้วัดขา 5V ของ Mega แล้วแก้ `ADC_REFERENCE_VOLTAGE` ใน `battery_sensor.h`
 
 ### ไฟล์
 
 | ไฟล์ | หน้าที่ |
 | --- | --- |
 | `motor_controller_simplify.ino` | task ทั้งหมด, protocol, ขับมอเตอร์ |
-| `battery_sensor.h/.cpp` | อ่านแบตด้วย ADC ระดับ register + moving average (โครงเดียวกับ `motor_controller_mega/battery_sensor.cpp`) |
+| `battery_sensor.h/.cpp` | อ่านแบตด้วย `analogRead()` + moving average |
 
 ## Tasks
 

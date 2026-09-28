@@ -1,23 +1,11 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import {
-		AlertTriangle,
-		Battery,
-		Droplets,
-		Link2,
-		Radio,
-		RefreshCw,
-		Wifi,
-		WifiOff
-	} from 'lucide-svelte';
+	import { AlertTriangle, Battery, Droplets, Radio, RefreshCw, Wifi, WifiOff } from 'lucide-svelte';
 
 	import AppContainer from '$lib/components/app-container.svelte';
 	import { CameraCard } from '$lib/features/camera';
 	import { sendRobotCommand, getRobotStatus } from '$lib/features/robot/api';
-	import ArmPreview from '$lib/features/robot/ui/arm-preview.svelte';
 	import CommandPad from '$lib/features/robot/ui/command-pad.svelte';
 	import MecanumDrivePreview from '$lib/features/robot/ui/mecanum-drive-preview.svelte';
-	import CompactFieldMonitor from '$lib/features/telemetry/components/compact-field-monitor.svelte';
 	import {
 		INITIAL_ROBOT_STATUS,
 		type RobotCommand,
@@ -143,10 +131,7 @@
 
 <svelte:head>
 	<title>Durian Bot | Control</title>
-	<meta
-		name="description"
-		content="Durian Bot field control panel for drive, actuator and IR safety commands."
-	/>
+	<meta name="description" content="Durian Bot field control panel for drive and actuator commands." />
 </svelte:head>
 
 <AppContainer>
@@ -155,10 +140,9 @@
 			<div>
 				<p class="eyebrow">DURIAN BOT / CONTROL DECK</p>
 				<h1>Move through the row.</h1>
-				<p class="subhead">ควบคุมผ่าน Raspberry Pi และตรวจสิ่งกีดขวางจาก IR sensor</p>
+				<p class="subhead">ควบคุมผ่าน Raspberry Pi</p>
 			</div>
 			<div class="header-actions">
-				<a class="back-link" href={resolve('/monitor')}>เปิด field monitor <Link2 size={14} /></a>
 				<button
 					class="refresh-button"
 					type="button"
@@ -213,11 +197,6 @@
 		{/if}
 
 		<div class="workspace-layout">
-			<section class="overview-layout" aria-label="Live field overview">
-				<CompactFieldMonitor />
-				<CameraCard compact />
-			</section>
-
 			<section class="panel driving-panel">
 				<div class="panel-heading">
 					<div>
@@ -253,7 +232,7 @@
 						<span class="section-index">02</span>
 						<h2>Actuator mount</h2>
 					</div>
-					<span class="panel-meta">3-axis arm live preview</span>
+					<span class="panel-meta">live status</span>
 				</div>
 				<div class="device-readout">
 					<div><span>arm state</span><strong>{status.arm_status}</strong></div>
@@ -261,12 +240,6 @@
 						<span>CAN heartbeat</span><strong>{status.arm_can_alive ? 'LIVE' : 'TIMEOUT'}</strong>
 					</div>
 				</div>
-				<ArmPreview
-					armCode={status.arm_code}
-					active={isOnline && status.arm_can_alive}
-					stale={!isOnline}
-					compact
-				/>
 				<CommandPad
 					channel="arm"
 					grid={armGrid}
@@ -276,6 +249,8 @@
 					onError={showCommandError}
 				/>
 			</section>
+
+			<CameraCard compact />
 		</div>
 	</div>
 </AppContainer>
@@ -455,20 +430,17 @@
 		border-color: color-mix(in oklab, var(--destructive), transparent 45%);
 		background: color-mix(in oklab, var(--destructive), transparent 88%);
 	}
-	/* One operator workspace: drive beside camera, IR beside the arm. */
+	/* One operator workspace: drive and actuator lead, camera underneath. */
 	.workspace-layout {
 		width: min(100%, 1180px);
 		margin: 0 auto;
 		display: grid;
-		grid-template-columns: minmax(0, 1.12fr) minmax(300px, 0.88fr);
+		grid-template-columns: 1fr 1fr;
 		grid-template-areas:
-			'drive camera'
-			'ir arm';
+			'drive arm'
+			'camera camera';
 		align-items: start;
 		gap: 0.9rem;
-	}
-	.workspace-layout > .overview-layout {
-		display: contents;
 	}
 	.workspace-layout .driving-panel {
 		grid-area: drive;
@@ -476,18 +448,10 @@
 	.workspace-layout .arm-panel {
 		grid-area: arm;
 	}
-	.workspace-layout .overview-layout :global(.compact-monitor) {
-		grid-area: ir;
-		width: 100%;
-		min-width: 0;
-	}
-	.workspace-layout .overview-layout :global(.camera-card) {
+	.workspace-layout :global(.camera-card) {
 		grid-area: camera;
 		width: 100%;
 		min-width: 0;
-	}
-	.overview-layout {
-		margin: 0;
 	}
 	.panel {
 		border-radius: 0.35rem;
@@ -595,9 +559,8 @@
 			grid-template-columns: 1fr;
 			grid-template-areas:
 				'drive'
-				'camera'
-				'ir'
-				'arm';
+				'arm'
+				'camera';
 		}
 		.panel {
 			min-height: auto;
